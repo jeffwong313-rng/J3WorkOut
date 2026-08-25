@@ -31,7 +31,7 @@
       padding: 16px;
       margin-bottom: 16px;
     }
-    h1, h2, h3 { margin: 0 0 12px 0; }
+    h1, h2, h3, h4 { margin: 0 0 12px 0; }
     button {
       background: var(--accent);
       color: white;
@@ -112,9 +112,10 @@
       <div class="header-select">
         <select id="routine-select">
           <option value="">-- Choose a Routine --</option>
-          <option value="Upper Body">Upper Body</option>
-          <option value="Lower Body">Lower Body</option>
-          <option value="Full Body">Full Body</option>
+          <option value="Push">Push</option>
+          <option value="Pull">Pull</option>
+          <option value="Legs">Legs</option>
+          <option value="Whole Body">Whole Body</option>
         </select>
         <button onclick="startWorkout()">Start Workout</button>
       </div>
@@ -123,7 +124,7 @@
     <div id="minimized-selector" class="minimized-banner hidden">
       <div>
         <span style="color: var(--text-muted); font-size: 12px;">ACTIVE WORKOUT</span>
-        <h3 id="active-routine-title" style="margin:0;">Upper Body</h3>
+        <h3 id="active-routine-title" style="margin:0;">Push</h3>
       </div>
       <button class="secondary" style="width: auto;" onclick="toggleSelector(true)">Change</button>
     </div>
@@ -151,26 +152,30 @@
   </div>
 
   <script>
-    // Initial Default Exercise Configurations
+    // Default PPL & Whole Body Exercise Configurations
     const defaultRoutines = {
-      "Upper Body": [
+      "Push": [
         { id: "bench_press", name: "Bench Press", sets: 3, reps: 10, weight: 135 },
+        { id: "overhead_press", name: "Overhead Press", sets: 3, reps: 8, weight: 95 },
+        { id: "tricep_dips", name: "Tricep Dips", sets: 3, reps: 12, weight: 0 }
+      ],
+      "Pull": [
         { id: "lat_pulldown", name: "Lat Pulldown", sets: 3, reps: 12, weight: 120 },
-        { id: "shoulder_press", name: "Overhead Press", sets: 3, reps: 8, weight: 95 }
+        { id: "bent_rows", name: "Barbell Rows", sets: 3, reps: 10, weight: 135 },
+        { id: "bicep_curls", name: "Bicep Curls", sets: 3, reps: 12, weight: 30 }
       ],
-      "Lower Body": [
+      "Legs": [
         { id: "squat", name: "Barbell Squat", sets: 4, reps: 8, weight: 185 },
-        { id: "deadlift", name: "Romanian Deadlift", sets: 3, reps: 10, weight: 155 },
-        { id: "calf_raise", name: "Calf Raises", sets: 4, reps: 15, weight: 100 }
+        { id: "rdl", name: "Romanian Deadlift", sets: 3, reps: 10, weight: 155 },
+        { id: "calf_raises", name: "Calf Raises", sets: 4, reps: 15, weight: 100 }
       ],
-      "Full Body": [
+      "Whole Body": [
         { id: "pushups", name: "Push Ups", sets: 3, reps: 15, weight: 0 },
         { id: "pullups", name: "Pull Ups", sets: 3, reps: 8, weight: 0 },
         { id: "goblet_squat", name: "Goblet Squats", sets: 3, reps: 12, weight: 50 }
       ]
     };
 
-    // Load custom defaults or fallback to standard defaults
     function getRoutines() {
       const saved = localStorage.getItem('workout_custom_defaults');
       return saved ? JSON.parse(saved) : defaultRoutines;
@@ -236,6 +241,8 @@
       const newReps = parseInt(document.getElementById(`${routineKey}_reps_${index}`).value) || 0;
       const newWeight = parseInt(document.getElementById(`${routineKey}_weight_${index}`).value) || 0;
 
+      if (!routines[routineKey]) routines[routineKey] = defaultRoutines[routineKey];
+
       routines[routineKey][index].sets = newSets;
       routines[routineKey][index].reps = newReps;
       routines[routineKey][index].weight = newWeight;
@@ -244,7 +251,6 @@
       alert(`Updated defaults for ${routines[routineKey][index].name}! These numbers will load automatically next time.`);
     }
 
-    // Export Data to JSON
     function exportData() {
       const dataStr = "data:text/json;charset=utf-8," + encodeURIComponent(JSON.stringify(localStorage));
       const downloadAnchor = document.createElement('a');
@@ -255,10 +261,9 @@
       downloadAnchor.remove();
     }
 
-    // Import Data from JSON
     function importData(event) {
       const fileReader = new FileReader();
-      fileReader.onload = function( e ) {
+      fileReader.onload = function(e) {
         try {
           const importedData = JSON.parse(e.target.result);
           Object.keys(importedData).forEach(key => {
