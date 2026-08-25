@@ -69,7 +69,10 @@
   .grid.cols-2{grid-template-columns:repeat(2,1fr);}
   .grid.cols-3{grid-template-columns:repeat(3,1fr);}
   .grid.cols-4{grid-template-columns:repeat(4,1fr);}
+  .grid.cols-5{grid-template-columns:repeat(5,1fr);}
+  @media (max-width:1000px){.grid.cols-5{grid-template-columns:repeat(3,1fr);}}
   @media (max-width:900px){.grid.cols-4{grid-template-columns:repeat(2,1fr);}}
+  @media (max-width:600px){.grid.cols-5{grid-template-columns:repeat(2,1fr);}}
   @media (max-width:720px){.grid.cols-2,.grid.cols-3{grid-template-columns:1fr;}}
 
   .card{
@@ -194,16 +197,18 @@
   .cal-dot{width:7px;height:7px;border-radius:50%;flex:0 0 auto;}
   @media (max-width:600px){.cal-cell{font-size:9.5px;padding:4px;} .cal-dot{width:5px;height:5px;}}
 
-  /* Rest timer */
-  .timer-wrap{display:flex;flex-direction:column;align-items:center;gap:16px;}
-  .timer-ring{position:relative;width:200px;height:200px;}
+  /* Rest timer (embedded in the workout wizard, between sets) */
+  .timer-wrap{display:flex;flex-direction:column;align-items:center;gap:12px;}
+  .timer-ring{position:relative;width:130px;height:130px;}
   .timer-ring svg{transform:rotate(-90deg);}
   .timer-ring .time{
     position:absolute;inset:0;display:flex;align-items:center;justify-content:center;
-    font-size:38px;font-weight:800;
+    font-size:22px;font-weight:800;
   }
-  .presets{display:flex;gap:8px;flex-wrap:wrap;justify-content:center;}
-  .presets button{min-width:56px;}
+  .presets{display:flex;gap:6px;flex-wrap:wrap;justify-content:center;}
+  .presets button{min-width:48px;padding:7px 10px;font-size:12px;}
+  .rest-timer-box{background:var(--bg-alt);border:1px solid var(--border);border-radius:12px;padding:14px;margin-top:14px;}
+  .rest-timer-box .hdr{font-size:11.5px;font-weight:700;color:var(--text-dim);text-transform:uppercase;letter-spacing:.03em;margin-bottom:10px;text-align:center;}
 
   .bar-chart{display:flex;align-items:flex-end;gap:6px;height:160px;}
   .bar-chart .bar-col{flex:1;display:flex;flex-direction:column;align-items:center;justify-content:flex-end;height:100%;gap:4px;}
@@ -246,7 +251,6 @@
     <button data-view="dashboard" class="active">Dashboard</button>
     <button data-view="plan">Workout Plan</button>
     <button data-view="log">Log Workout</button>
-    <button data-view="timer">Rest Timer</button>
     <button data-view="history">History</button>
     <button data-view="calendar">Calendar</button>
     <button data-view="progress">Progress</button>
@@ -256,12 +260,15 @@
   <!-- DASHBOARD -->
   <section class="view active" id="view-dashboard">
     <div class="card" id="todayFocusCard" style="margin-bottom:16px;"></div>
-    <div class="grid cols-4" style="margin-bottom:16px;">
+    <div class="grid cols-5" style="margin-bottom:16px;">
       <div class="card">
         <div class="stat"><div class="num accent" id="statTotalSessions">0</div><div class="lbl">Total sessions logged</div></div>
       </div>
       <div class="card">
         <div class="stat"><div class="num accent2" id="statWeekVolume">0</div><div class="lbl">This week's volume (lb)</div></div>
+      </div>
+      <div class="card">
+        <div class="stat"><div class="num" id="statWeekCalories" style="color:var(--activity)">0</div><div class="lbl">Calories this week ⚡</div></div>
       </div>
       <div class="card">
         <div class="stat"><div class="num warn" id="statNextClimb">—</div><div class="lbl">Next overload climb</div></div>
@@ -341,39 +348,6 @@
     </div>
   </section>
 
-  <!-- REST TIMER -->
-  <section class="view" id="view-timer">
-    <div class="card">
-      <h2>Rest Timer</h2>
-      <div class="hint">Pick a rest interval between sets. A beep plays when time's up.</div>
-      <div class="timer-wrap">
-        <div class="presets">
-          <button class="btn secondary" onclick="setTimerPreset(30)">30s</button>
-          <button class="btn secondary" onclick="setTimerPreset(60)">60s</button>
-          <button class="btn secondary" onclick="setTimerPreset(90)">90s</button>
-          <button class="btn secondary" onclick="setTimerPreset(120)">120s</button>
-          <button class="btn secondary" onclick="setTimerPreset(180)">180s</button>
-        </div>
-        <div class="row" style="max-width:260px;">
-          <input type="number" id="customTimerInput" placeholder="Custom seconds">
-          <button class="btn ghost" onclick="setTimerCustom()">Set</button>
-        </div>
-        <div class="timer-ring">
-          <svg width="200" height="200">
-            <circle cx="100" cy="100" r="88" stroke="#2a2f3d" stroke-width="12" fill="none"/>
-            <circle id="timerCircle" cx="100" cy="100" r="88" stroke="#3ddc97" stroke-width="12" fill="none"
-              stroke-linecap="round" stroke-dasharray="553" stroke-dashoffset="0"/>
-          </svg>
-          <div class="time" id="timerDisplay">00:60</div>
-        </div>
-        <div class="row" style="max-width:320px;">
-          <button class="btn" id="timerStartBtn" onclick="toggleTimer()">Start</button>
-          <button class="btn secondary" onclick="resetTimer()">Reset</button>
-        </div>
-      </div>
-    </div>
-  </section>
-
   <!-- HISTORY -->
   <section class="view" id="view-history">
     <div class="card">
@@ -387,7 +361,7 @@
 
   <!-- CALENDAR -->
   <section class="view" id="view-calendar">
-    <div class="grid cols-4" id="calendarStats" style="margin-bottom:16px;"></div>
+    <div class="grid cols-5" id="calendarStats" style="margin-bottom:16px;"></div>
     <div class="card" style="margin-bottom:16px;">
       <div class="flex-between">
         <h2 id="calendarTitle">—</h2>
@@ -424,7 +398,7 @@
     <div class="card">
       <h2>Weekly Breakdown</h2>
       <table id="weeklyTable">
-        <thead><tr><th>Week</th><th>Sessions</th><th>Exercises</th><th>Total Volume</th><th>Top Set</th></tr></thead>
+        <thead><tr><th>Week</th><th>Sessions</th><th>Exercises</th><th>Total Volume</th><th>Calories</th><th>Top Set</th></tr></thead>
         <tbody></tbody>
       </table>
     </div>
@@ -435,7 +409,7 @@
     <div class="grid cols-2">
       <div class="card">
         <h2>Your Profile</h2>
-        <div class="hint">Used to set your starting baseline weights.</div>
+        <div class="hint">Used to set your starting baseline weights, and to estimate calories burned per workout.</div>
         <label>Height</label>
         <input type="text" id="profHeight">
         <label>Bodyweight (lb)</label>
@@ -472,7 +446,7 @@
     </div>
   </section>
 
-  <div class="footer-note">Iron Log stores all data locally in your browser. Nothing is sent anywhere.</div>
+  <div class="footer-note">Iron Log stores all data locally in your browser. Nothing is sent anywhere. All dates and times shown are Pacific Time.</div>
 </div>
 
 <div class="toast" id="toast"></div>
@@ -484,6 +458,29 @@
 --------------------------------------------------------- */
 
 const LS_KEYS = { profile:'ironlog_profile', exercises:'ironlog_exercises', logs:'ironlog_logs', todayPlan:'ironlog_todayplan', lastBackup:'ironlog_lastbackup', activityLogs:'ironlog_activitylogs' };
+
+// --- Pacific Time pinning ---------------------------------------------------
+// Every "today", timestamp, and calendar view in this app is anchored to
+// Pacific Time (America/Los_Angeles — auto-adjusts for PDT/PST), regardless of
+// what timezone the device itself is set to. Declared before DEFAULT_PROFILE
+// below since it calls todayStr(), which depends on this.
+const APP_TIMEZONE = 'America/Los_Angeles';
+function pstParts(){
+  const parts = new Intl.DateTimeFormat('en-US', {
+    timeZone: APP_TIMEZONE, year:'numeric', month:'2-digit', day:'2-digit',
+    hour:'2-digit', minute:'2-digit', second:'2-digit', hour12:false
+  }).formatToParts(new Date());
+  const get = t => parts.find(p=>p.type===t).value;
+  return { year:+get('year'), month:+get('month'), day:+get('day'), hour:+(get('hour')==='24'?'0':get('hour')), minute:+get('minute'), second:+get('second') };
+}
+function todayStr(){ const p = pstParts(); return `${p.year}-${String(p.month).padStart(2,'0')}-${String(p.day).padStart(2,'0')}`; }
+// Add/subtract whole days from a YYYY-MM-DD string, staying purely in calendar-date
+// arithmetic (no timezone conversion), so it's safe to use anywhere.
+function addDaysToDateStr(dateStr, delta){
+  const d = new Date(dateStr + 'T00:00:00');
+  d.setDate(d.getDate() + delta);
+  return `${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,'0')}-${String(d.getDate()).padStart(2,'0')}`;
+}
 
 const DEFAULT_PROFILE = {
   height: "5'5\"",
@@ -633,7 +630,7 @@ let logs = loadJSON(LS_KEYS.logs, []);
 let activityLogs = loadJSON(LS_KEYS.activityLogs, []); // non-lifting "I was active" entries: {id,date,activityId,label,hours,notes}
 let selectedExerciseId = exercises.length ? exercises[0].id : null;
 let planPickerExpanded = true;       // Workout Plan: whether the day picker is expanded or collapsed to a strip
-let calendarViewDate = new Date(); calendarViewDate.setDate(1);
+let calendarViewDate = (()=>{ const p = pstParts(); return new Date(p.year, p.month-1, 1); })();
 let calendarSelectedDate = null;
 
 function loadJSON(key, fallback){
@@ -646,7 +643,6 @@ function loadJSON(key, fallback){
 function save(key, val){ localStorage.setItem(key, JSON.stringify(val)); }
 function saveAll(){ save(LS_KEYS.profile, profile); save(LS_KEYS.exercises, exercises); save(LS_KEYS.logs, logs); save(LS_KEYS.activityLogs, activityLogs); }
 
-function todayStr(){ return new Date().toISOString().slice(0,10); }
 function uid(){ return Date.now().toString(36)+Math.random().toString(36).slice(2,7); }
 
 function showToast(msg){
@@ -693,16 +689,56 @@ function fmtWeight(ex, val){
   return val + ' lb';
 }
 
-// Consecutive days (ending today or yesterday) with at least one logged workout.
+/* ---------------- Calories burned (estimate) ----------------
+   Standard MET formula: calories = MET × bodyweight(kg) × duration(hours).
+   - MET (metabolic equivalent) is assigned per exercise category / activity.
+   - Duration for a lift is estimated from its reps (work time) plus your
+     current rest-timer setting between sets (see REST_SECONDS below).
+   - The weight you actually lifted, relative to your own baseline for that
+     move, nudges the intensity up or down slightly — lifting heavier than
+     your usual baseline burns a bit more, lighter a bit less.
+   This is an estimate for motivation/tracking, not a lab measurement. */
+const CATEGORY_MET = {
+  'lower-compound': 6, 'upper-compound': 5, 'upper-accessory': 4.5,
+  'accessory': 3.5, 'bodyweight': 4, 'fullbody': 8, 'conditioning': 8
+};
+const ACTIVITY_MET = { basketball: 6.5, othersport: 7 };
+const SECONDS_PER_REP = 3; // rough cadence for one rep, up + down
+
+function bodyweightKg(){ return (profile.weight || 150) * 0.453592; }
+
+function caloriesForExerciseLog(log){
+  const ex = exercises.find(e=>e.id===log.exerciseId);
+  if(!ex || !log.sets || !log.sets.length) return 0;
+  const baseMet = CATEGORY_MET[ex.category] || 4;
+  let met = baseMet;
+  if(ex.unit === 'lb' && ex.baseline > 0){
+    const avgWeight = log.sets.reduce((s,st)=> s + (st.weight||0), 0) / log.sets.length;
+    const nudge = Math.max(-0.15, Math.min(0.3, (avgWeight / ex.baseline) - 1));
+    met = baseMet * (1 + nudge);
+  }
+  const restSeconds = (typeof timerTotal === 'number' && timerTotal > 0) ? timerTotal : 60;
+  const totalSeconds = log.sets.reduce((sum,st)=> sum + Math.max(st.reps,1) * SECONDS_PER_REP + restSeconds, 0);
+  return met * bodyweightKg() * (totalSeconds / 3600);
+}
+function caloriesForActivityLog(a){
+  const met = ACTIVITY_MET[a.activityId] || 6;
+  return met * bodyweightKg() * (a.hours || 0);
+}
+function totalCaloriesForDate(dateStr){
+  const exCals = logs.filter(l=>l.date===dateStr).reduce((s,l)=> s + caloriesForExerciseLog(l), 0);
+  const actCals = activityLogs.filter(a=>a.date===dateStr).reduce((s,a)=> s + caloriesForActivityLog(a), 0);
+  return exCals + actCals;
+}
+function fmtCalories(n){ return Math.round(n).toLocaleString() + ' cal'; }
+
+// Consecutive days (ending today or yesterday, PT) with at least one logged workout.
 function currentStreak(){
   const loggedDates = new Set([...logs.map(l=>l.date), ...activityLogs.map(a=>a.date)]);
   let streak = 0;
-  const d = new Date();
-  if(!loggedDates.has(todayStr())) d.setDate(d.getDate()-1);
-  while(true){
-    const ds = d.toISOString().slice(0,10);
-    if(loggedDates.has(ds)){ streak++; d.setDate(d.getDate()-1); } else break;
-  }
+  let cursor = todayStr();
+  if(!loggedDates.has(cursor)) cursor = addDaysToDateStr(cursor, -1);
+  while(loggedDates.has(cursor)){ streak++; cursor = addDaysToDateStr(cursor, -1); }
   return streak;
 }
 
@@ -728,7 +764,7 @@ function switchView(name){
 
 function renderDashboard(){
   document.getElementById('headerWeek').textContent = 'Week ' + currentWeekNumber();
-  document.getElementById('headerDate').textContent = new Date().toLocaleDateString(undefined,{weekday:'short',month:'short',day:'numeric'});
+  document.getElementById('headerDate').textContent = new Date().toLocaleDateString(undefined,{weekday:'short',month:'short',day:'numeric',timeZone:APP_TIMEZONE}) + ' PT';
 
   renderTodayFocusCard();
   document.getElementById('statTotalSessions').textContent = logs.length;
@@ -737,6 +773,10 @@ function renderDashboard(){
   const weekLogs = logs.filter(l => weekNumberForDate(l.date) === wk);
   const totalVolume = weekLogs.reduce((sum,l)=> sum + l.sets.reduce((s,set)=> s + (set.reps*set.weight||0), 0), 0);
   document.getElementById('statWeekVolume').textContent = Math.round(totalVolume).toLocaleString();
+
+  const weekActivity = activityLogs.filter(a => weekNumberForDate(a.date) === wk);
+  const weekCalories = weekLogs.reduce((s,l)=> s + caloriesForExerciseLog(l), 0) + weekActivity.reduce((s,a)=> s + caloriesForActivityLog(a), 0);
+  document.getElementById('statWeekCalories').textContent = Math.round(weekCalories).toLocaleString();
 
   const climbIn = weeksUntilNextClimb();
   document.getElementById('statNextClimb').textContent = climbIn === 0 ? 'This week!' : ('in ' + climbIn + ' wk' + (climbIn>1?'s':''));
@@ -770,7 +810,7 @@ function renderDashboard(){
       if(item.kind === 'activity'){
         const a = item.data;
         return `<div style="display:flex;justify-content:space-between;align-items:center;gap:10px;padding:8px 0;border-bottom:1px solid var(--border);font-size:13px;">
-          <div style="display:flex;align-items:center;gap:10px;">${iconBadge({category:'activity'},'sm')}<div><strong>${a.label}</strong> <span style="color:var(--text-dim)">— ${a.hours} hr${a.hours!==1?'s':''}</span></div></div>
+          <div style="display:flex;align-items:center;gap:10px;">${iconBadge({category:'activity'},'sm')}<div><strong>${a.label}</strong> <span style="color:var(--text-dim)">— ${a.hours} hr${a.hours!==1?'s':''} · ~${fmtCalories(caloriesForActivityLog(a))}</span></div></div>
           <div style="color:var(--text-dim)">${a.date}</div>
         </div>`;
       }
@@ -778,7 +818,7 @@ function renderDashboard(){
       const ex = exercises.find(e=>e.id===l.exerciseId) || {name:'Unknown', unit:'lb', category:'accessory'};
       const topSet = l.sets.reduce((m,s)=> s.weight>m.weight? s : m, l.sets[0]||{reps:0,weight:0});
       return `<div style="display:flex;justify-content:space-between;align-items:center;gap:10px;padding:8px 0;border-bottom:1px solid var(--border);font-size:13px;">
-        <div style="display:flex;align-items:center;gap:10px;">${iconBadge(ex,'sm')}<div><strong>${ex.name}</strong> <span style="color:var(--text-dim)">— ${l.sets.length} sets</span></div></div>
+        <div style="display:flex;align-items:center;gap:10px;">${iconBadge(ex,'sm')}<div><strong>${ex.name}</strong> <span style="color:var(--text-dim)">— ${l.sets.length} sets · ~${fmtCalories(caloriesForExerciseLog(l))}</span></div></div>
         <div style="color:var(--text-dim)">${topSet.reps}×${fmtWeight(ex, topSet.weight)} · ${l.date}</div>
       </div>`;
     }).join('');
@@ -999,6 +1039,34 @@ function renderPlanView(){
       <div id="wizardSetsContainer" style="margin-top:14px;"></div>
       <button class="btn secondary" onclick="addWizardSetRow()" style="width:100%;margin-top:6px;">+ Add Set</button>
       <label class="check-row"><input type="checkbox" id="wizardSaveDefault"> Save these numbers as my new default for this exercise</label>
+      <div class="rest-timer-box">
+        <div class="hdr">Rest Timer — between sets</div>
+        <div class="timer-wrap">
+          <div class="presets">
+            <button class="btn secondary" onclick="setTimerPreset(30)">30s</button>
+            <button class="btn secondary" onclick="setTimerPreset(60)">60s</button>
+            <button class="btn secondary" onclick="setTimerPreset(90)">90s</button>
+            <button class="btn secondary" onclick="setTimerPreset(120)">120s</button>
+            <button class="btn secondary" onclick="setTimerPreset(180)">180s</button>
+          </div>
+          <div class="row" style="max-width:220px;">
+            <input type="number" id="customTimerInput" placeholder="Custom seconds">
+            <button class="btn ghost" onclick="setTimerCustom()">Set</button>
+          </div>
+          <div class="timer-ring">
+            <svg width="130" height="130">
+              <circle cx="65" cy="65" r="54" stroke="#2a2f3d" stroke-width="10" fill="none"/>
+              <circle id="timerCircle" cx="65" cy="65" r="54" stroke="#3ddc97" stroke-width="10" fill="none"
+                stroke-linecap="round" stroke-dasharray="339" stroke-dashoffset="0"/>
+            </svg>
+            <div class="time" id="timerDisplay">01:00</div>
+          </div>
+          <div class="row" style="max-width:220px;">
+            <button class="btn" id="timerStartBtn" onclick="toggleTimer()">Start</button>
+            <button class="btn secondary" onclick="resetTimer()">Reset</button>
+          </div>
+        </div>
+      </div>
       <div class="wizard-actions">
         <button class="btn ghost" onclick="planBack()">← Back</button>
         <button class="btn ghost" onclick="wizardSkipExercise()">Couldn't finish — skip</button>
@@ -1013,6 +1081,7 @@ function renderPlanView(){
       </div>`;
   } else if(step.type === 'complete'){
     const sessionLogs = (plan.sessionLogIds||[]).map(id=>logs.find(l=>l.id===id)).filter(Boolean);
+    const totalCals = sessionLogs.reduce((s,l)=> s + caloriesForExerciseLog(l), 0);
     inner += `<h2>Workout complete 🎉</h2>
       <div class="hint">Nice work finishing Day ${day.dayNum} — ${day.title}. Here's what you logged today:</div>`;
     if(sessionLogs.length===0){
@@ -1021,8 +1090,12 @@ function renderPlanView(){
       inner += sessionLogs.map(l=>{
         const ex = exercises.find(e=>e.id===l.exerciseId) || {name:'Unknown', unit:'lb', category:'accessory'};
         const setsStr = l.sets.map(s=> ex.unit==='lb' ? `${s.reps}×${s.weight}lb` : `${s.reps||s.weight}`).join(', ');
-        return `<div style="display:flex;align-items:center;gap:10px;padding:8px 0;border-bottom:1px solid var(--border);font-size:13px;">${iconBadge(ex,'sm')}<div><strong>${ex.name}</strong><div style="color:var(--text-dim);">${setsStr}</div></div></div>`;
+        return `<div style="display:flex;align-items:center;justify-content:space-between;gap:10px;padding:8px 0;border-bottom:1px solid var(--border);font-size:13px;">
+          <div style="display:flex;align-items:center;gap:10px;">${iconBadge(ex,'sm')}<div><strong>${ex.name}</strong><div style="color:var(--text-dim);">${setsStr}</div></div></div>
+          <div style="color:var(--activity);font-weight:700;white-space:nowrap;">~${fmtCalories(caloriesForExerciseLog(l))}</div>
+        </div>`;
       }).join('');
+      inner += `<div class="presc" style="margin-top:10px;">Estimated total: ~${fmtCalories(totalCals)} burned</div>`;
     }
     inner += `<div class="wizard-actions">
         <button class="btn secondary" onclick="changePlanDay()">Pick another day</button>
@@ -1041,6 +1114,7 @@ function renderPlanView(){
       for(let i=0;i<(ex.targetSets||3);i++) addWizardSetRow(ex, target);
     }
   }
+  updateTimerDisplay(); // no-op unless this render includes the rest-timer widget
 }
 
 function addWizardSetRow(ex, target){
@@ -1292,34 +1366,44 @@ function saveWorkoutLog(){
   showToast('Workout saved ✓' + (savedDefault ? ' · new default set' : ''));
 }
 
-/* ---------------- Rest Timer ---------------- */
+/* ---------------- Rest Timer (embedded inline in the Workout Plan wizard) ---------------- */
 
 let timerTotal = 60;
 let timerRemaining = 60;
 let timerInterval = null;
 let timerRunning = false;
-const CIRC = 2 * Math.PI * 88;
+const CIRC = 2 * Math.PI * 54; // matches the compact 130px ring's radius
 
+// The timer's DOM only exists while an 'exercise' wizard step is on screen, so every
+// lookup here is guarded — these functions are safe to call (or keep ticking in the
+// background) even when the widget currently isn't rendered.
 function updateTimerDisplay(){
+  const display = document.getElementById('timerDisplay');
+  if(!display) return;
   const m = Math.floor(timerRemaining/60).toString().padStart(2,'0');
   const s = Math.floor(timerRemaining%60).toString().padStart(2,'0');
-  document.getElementById('timerDisplay').textContent = m+':'+s;
+  display.textContent = m+':'+s;
   const circle = document.getElementById('timerCircle');
-  const frac = timerTotal>0 ? timerRemaining/timerTotal : 0;
-  circle.setAttribute('stroke-dasharray', CIRC);
-  circle.setAttribute('stroke-dashoffset', CIRC * (1-frac));
-  circle.setAttribute('stroke', timerRemaining<=5 && timerRemaining>0 ? '#ff9f5a' : '#3ddc97');
+  if(circle){
+    const frac = timerTotal>0 ? timerRemaining/timerTotal : 0;
+    circle.setAttribute('stroke-dasharray', CIRC);
+    circle.setAttribute('stroke-dashoffset', CIRC * (1-frac));
+    circle.setAttribute('stroke', timerRemaining<=5 && timerRemaining>0 ? '#ff9f5a' : '#3ddc97');
+  }
+  const btn = document.getElementById('timerStartBtn');
+  if(btn) btn.textContent = timerRunning ? 'Pause' : 'Start';
 }
 function setTimerPreset(sec){ timerTotal = sec; timerRemaining = sec; pauseTimer(); updateTimerDisplay(); }
 function setTimerCustom(){
-  const v = parseInt(document.getElementById('customTimerInput').value,10);
+  const el = document.getElementById('customTimerInput');
+  const v = el && parseInt(el.value,10);
   if(v>0){ timerTotal=v; timerRemaining=v; pauseTimer(); updateTimerDisplay(); }
 }
 function toggleTimer(){ timerRunning ? pauseTimer() : startTimer(); }
 function startTimer(){
   if(timerRemaining<=0) return;
   timerRunning = true;
-  document.getElementById('timerStartBtn').textContent = 'Pause';
+  updateTimerDisplay();
   timerInterval = setInterval(()=>{
     timerRemaining -= 1;
     if(timerRemaining<=0){
@@ -1336,7 +1420,7 @@ function startTimer(){
 function pauseTimer(){
   timerRunning = false;
   clearInterval(timerInterval);
-  document.getElementById('timerStartBtn').textContent = 'Start';
+  updateTimerDisplay();
 }
 function resetTimer(){ timerRemaining = timerTotal; pauseTimer(); updateTimerDisplay(); }
 
@@ -1388,7 +1472,7 @@ function renderHistory(){
             <button class="icon-btn" onclick="deleteActivityLog('${a.id}')">🗑</button>
           </div>
         </div>
-        <div style="font-size:13px;color:var(--text-dim);margin-top:4px;">${a.hours} hr${a.hours!==1?'s':''} active</div>
+        <div style="font-size:13px;color:var(--text-dim);margin-top:4px;">${a.hours} hr${a.hours!==1?'s':''} active · <span style="color:var(--activity);font-weight:700;">~${fmtCalories(caloriesForActivityLog(a))}</span></div>
         ${a.notes ? `<div style="font-size:12.5px;margin-top:4px;font-style:italic;color:var(--text-dim)">"${a.notes}"</div>` : ''}
       </div>`;
     }
@@ -1404,7 +1488,7 @@ function renderHistory(){
           <button class="icon-btn" onclick="deleteLog('${l.id}')">🗑</button>
         </div>
       </div>
-      <div style="font-size:13px;color:var(--text-dim);margin-top:4px;">${setsStr}</div>
+      <div style="font-size:13px;color:var(--text-dim);margin-top:4px;">${setsStr} · <span style="color:var(--activity);font-weight:700;">~${fmtCalories(caloriesForExerciseLog(l))}</span></div>
       ${l.notes ? `<div style="font-size:12.5px;margin-top:4px;font-style:italic;color:var(--text-dim)">"${l.notes}"</div>` : ''}
     </div>`;
   }).join('');
@@ -1491,11 +1575,13 @@ function renderCalendarStats(){
   const activeDays = new Set([...monthLogs.map(l=>l.date), ...monthActivity.map(a=>a.date)]).size;
   const vol = monthLogs.reduce((s,l)=> s + l.sets.reduce((ss,st)=> ss + (st.reps*st.weight||0),0), 0);
   const activityHours = monthActivity.reduce((s,a)=> s + (a.hours||0), 0);
+  const monthCalories = monthLogs.reduce((s,l)=> s + caloriesForExerciseLog(l), 0) + monthActivity.reduce((s,a)=> s + caloriesForActivityLog(a), 0);
   box.innerHTML = `
     <div class="card"><div class="stat"><div class="num accent">${activeDays}</div><div class="lbl">Active days this month</div></div></div>
     <div class="card"><div class="stat"><div class="num accent2">${monthLogs.length}</div><div class="lbl">Exercises logged</div></div></div>
     <div class="card"><div class="stat"><div class="num warn">${Math.round(vol).toLocaleString()}</div><div class="lbl">Volume this month (lb)</div></div></div>
-    <div class="card"><div class="stat"><div class="num" style="color:var(--activity)">${activityHours.toLocaleString()}</div><div class="lbl">Activity hours this month</div></div></div>`;
+    <div class="card"><div class="stat"><div class="num" style="color:var(--activity)">${activityHours.toLocaleString()}</div><div class="lbl">Activity hours this month</div></div></div>
+    <div class="card"><div class="stat"><div class="num" style="color:var(--activity)">${Math.round(monthCalories).toLocaleString()}</div><div class="lbl">Calories this month</div></div></div>`;
 }
 
 function selectCalendarDay(dateStr){
@@ -1516,14 +1602,16 @@ function renderCalendarDetail(){
   if(dayLogs.length===0 && dayActivities.length===0){
     html += '<div class="empty">Nothing logged this day.</div>';
   }else{
+    const dayTotalCals = dayLogs.reduce((s,l)=> s + caloriesForExerciseLog(l), 0) + dayActivities.reduce((s,a)=> s + caloriesForActivityLog(a), 0);
     html += dayLogs.map(l=>{
       const ex = exercises.find(e=>e.id===l.exerciseId) || {name:'Unknown', unit:'lb', category:'accessory'};
       const setsStr = l.sets.map(s=> ex.unit==='lb' ? `${s.reps}×${s.weight}lb` : `${s.reps||s.weight}`).join(', ');
-      return `<div style="display:flex;align-items:center;gap:10px;padding:8px 0;border-bottom:1px solid var(--border);font-size:13px;">${iconBadge(ex,'sm')}<div><strong>${ex.name}</strong><div style="color:var(--text-dim);">${setsStr}</div></div></div>`;
+      return `<div style="display:flex;align-items:center;gap:10px;padding:8px 0;border-bottom:1px solid var(--border);font-size:13px;">${iconBadge(ex,'sm')}<div><strong>${ex.name}</strong><div style="color:var(--text-dim);">${setsStr} · <span style="color:var(--activity);font-weight:700;">~${fmtCalories(caloriesForExerciseLog(l))}</span></div></div></div>`;
     }).join('');
     html += dayActivities.map(a=>{
-      return `<div style="display:flex;align-items:center;gap:10px;padding:8px 0;border-bottom:1px solid var(--border);font-size:13px;">${iconBadge({category:'activity'},'sm')}<div><strong>${a.label}</strong><div style="color:var(--text-dim);">${a.hours} hr${a.hours!==1?'s':''} active${a.notes?' · "'+a.notes+'"':''}</div></div></div>`;
+      return `<div style="display:flex;align-items:center;gap:10px;padding:8px 0;border-bottom:1px solid var(--border);font-size:13px;">${iconBadge({category:'activity'},'sm')}<div><strong>${a.label}</strong><div style="color:var(--text-dim);">${a.hours} hr${a.hours!==1?'s':''} active · <span style="color:var(--activity);font-weight:700;">~${fmtCalories(caloriesForActivityLog(a))}</span>${a.notes?' · "'+a.notes+'"':''}</div></div></div>`;
     }).join('');
+    html += `<div class="presc" style="margin-top:10px;">Estimated total: ~${fmtCalories(dayTotalCals)} burned</div>`;
   }
   html += '</div>';
   box.innerHTML = html;
@@ -1617,9 +1705,11 @@ function renderProgress(){
   const tbody = document.querySelector('#weeklyTable tbody');
   tbody.innerHTML = weeks.slice().reverse().map(week=>{
     const weekLogs = logs.filter(l=>weekNumberForDate(l.date)===week);
-    if(weekLogs.length===0 && week!==currentWeekNumber()) return '';
+    const weekActivity = activityLogs.filter(a=>weekNumberForDate(a.date)===week);
+    if(weekLogs.length===0 && weekActivity.length===0 && week!==currentWeekNumber()) return '';
     const exIds = new Set(weekLogs.map(l=>l.exerciseId));
     const vol = weekLogs.reduce((s,l)=> s + l.sets.reduce((ss,st)=> ss + (st.reps*st.weight||0),0), 0);
+    const cals = weekLogs.reduce((s,l)=> s + caloriesForExerciseLog(l), 0) + weekActivity.reduce((s,a)=> s + caloriesForActivityLog(a), 0);
     let topSetStr = '—';
     let topWeight = -1;
     weekLogs.forEach(l=>{
@@ -1628,8 +1718,8 @@ function renderProgress(){
         if(s.weight>topWeight){ topWeight=s.weight; topSetStr = `${exx?exx.name:'?'} ${s.reps}×${s.weight}`; }
       });
     });
-    return `<tr><td><span class="badge-week">Week ${week}</span></td><td>${weekLogs.length}</td><td>${exIds.size}</td><td>${Math.round(vol).toLocaleString()} lb</td><td style="font-size:12px;">${topSetStr}</td></tr>`;
-  }).join('') || '<tr><td colspan="5" class="empty">No data yet.</td></tr>';
+    return `<tr><td><span class="badge-week">Week ${week}</span></td><td>${weekLogs.length}</td><td>${exIds.size}</td><td>${Math.round(vol).toLocaleString()} lb</td><td>${Math.round(cals).toLocaleString()}</td><td style="font-size:12px;">${topSetStr}</td></tr>`;
+  }).join('') || '<tr><td colspan="6" class="empty">No data yet.</td></tr>';
 }
 
 /* ---------------- Settings ---------------- */
