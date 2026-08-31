@@ -21,6 +21,10 @@
     --blue:#5aa9ff;
     --purple:#c792ff;
     --activity:#ff6bcb;
+    --legiso:#8bd450;
+    --glute:#ff6b81;
+    --tricep:#e2b13c;
+    --core:#6ee7f0;
     --radius:14px;
     --shadow: 0 4px 18px rgba(0,0,0,0.35);
   }
@@ -144,11 +148,15 @@
     display:flex;align-items:center;justify-content:center;
   }
   .ex-icon svg{width:20px;height:20px;}
-  .ex-icon.cat-lower-compound{background:rgba(61,220,151,.15);color:var(--accent);}
-  .ex-icon.cat-upper-compound{background:rgba(90,169,255,.15);color:var(--blue);}
-  .ex-icon.cat-upper-accessory{background:rgba(199,146,255,.15);color:var(--purple);}
-  .ex-icon.cat-accessory{background:rgba(255,159,90,.15);color:var(--accent2);}
-  .ex-icon.cat-bodyweight{background:rgba(255,206,84,.15);color:var(--warn);}
+  .ex-icon.cat-legs-compound{background:rgba(61,220,151,.15);color:var(--accent);}
+  .ex-icon.cat-legs-isolation{background:rgba(139,212,80,.15);color:var(--legiso);}
+  .ex-icon.cat-glutes{background:rgba(255,107,129,.15);color:var(--glute);}
+  .ex-icon.cat-chest{background:rgba(90,169,255,.15);color:var(--blue);}
+  .ex-icon.cat-back{background:rgba(199,146,255,.15);color:var(--purple);}
+  .ex-icon.cat-shoulders{background:rgba(255,159,90,.15);color:var(--accent2);}
+  .ex-icon.cat-biceps{background:rgba(255,206,84,.15);color:var(--warn);}
+  .ex-icon.cat-triceps{background:rgba(226,177,60,.15);color:var(--tricep);}
+  .ex-icon.cat-core{background:rgba(110,231,240,.15);color:var(--core);}
   .ex-icon.cat-fullbody{background:rgba(255,138,92,.15);color:#ff8a5c;}
   .ex-icon.cat-conditioning{background:rgba(79,209,197,.15);color:#4fd1c5;}
   .ex-icon.cat-activity{background:rgba(255,107,203,.15);color:var(--activity);}
@@ -156,6 +164,21 @@
   .ex-icon.sm svg{width:14px;height:14px;}
   .legend{display:flex;flex-wrap:wrap;gap:12px;font-size:11.5px;color:var(--text-dim);margin-top:12px;}
   .legend .item{display:flex;align-items:center;gap:6px;}
+
+  /* Icon picker (Settings → build an exercise) */
+  .icon-picker{display:grid;grid-template-columns:repeat(auto-fill,minmax(44px,1fr));gap:8px;margin-top:6px;max-height:220px;overflow-y:auto;padding:2px;}
+  .icon-picker .icon-choice{
+    width:44px;height:44px;border-radius:10px;border:1px solid var(--border);background:var(--bg-alt);
+    display:flex;align-items:center;justify-content:center;cursor:pointer;color:var(--text-dim);
+    transition:border-color .15s,color .15s;
+  }
+  .icon-picker .icon-choice svg{width:20px;height:20px;}
+  .icon-picker .icon-choice:hover{border-color:var(--accent-dim);}
+  .icon-picker .icon-choice.selected{border-color:var(--accent);color:var(--accent);background:rgba(61,220,151,.1);}
+  .category-group-heading{display:flex;align-items:center;gap:8px;margin:18px 0 8px;font-size:11.5px;font-weight:700;text-transform:uppercase;letter-spacing:.03em;}
+  .category-group-heading:first-child{margin-top:0;}
+  .category-dot{width:9px;height:9px;border-radius:50%;flex:0 0 auto;}
+  .equip-tag{display:inline-block;font-size:10px;font-weight:700;padding:2px 7px;border-radius:99px;background:var(--bg-alt);border:1px solid var(--border);color:var(--text-dim);margin-left:6px;white-space:nowrap;}
 
   /* Day picker (Workout Plan) */
   .day-card{
@@ -303,32 +326,13 @@
   <section class="view" id="view-log">
     <div class="grid cols-2">
       <div class="card">
-        <h2>1. Pick an exercise</h2>
-        <div class="hint">Tap an exercise, or add your own below. Icons show the type of movement at a glance.</div>
-        <div id="exerciseList"></div>
-        <div class="legend" id="iconLegend"></div>
-        <div style="margin-top:14px;">
-          <label>Add custom exercise</label>
-          <div class="row">
-            <input type="text" id="newExName" placeholder="e.g. Cable Fly">
-            <select id="newExCategory">
-              <option value="lower-compound">Lower — Compound (legs)</option>
-              <option value="upper-compound">Upper — Compound (push/press)</option>
-              <option value="upper-accessory">Upper — Accessory (pull/back)</option>
-              <option value="accessory">Accessory (arms/shoulders)</option>
-              <option value="bodyweight">Bodyweight</option>
-            </select>
-          </div>
-          <div class="row" style="margin-top:8px;">
-            <input type="number" id="newExBaseline" placeholder="Baseline weight (lb)">
-            <input type="number" id="newExIncrement" placeholder="Climb per overload (lb)" value="5">
-          </div>
-          <div class="row" style="margin-top:8px;">
-            <input type="number" id="newExSets" placeholder="Target sets" value="3">
-            <input type="number" id="newExReps" placeholder="Target reps" value="10">
-          </div>
-          <button class="btn secondary" style="width:100%;margin-top:8px;" onclick="addCustomExercise()">+ Add Exercise</button>
+        <div class="flex-between">
+          <h2>1. Pick an exercise</h2>
+          <select id="logExerciseFilter" style="width:auto;" onchange="renderExerciseList()"><option value="">All categories</option></select>
         </div>
+        <div class="hint">Grouped by category — tap one to log it. Want a new one, a different icon, or your own custom move? Manage the full library in Settings.</div>
+        <div id="exerciseList"></div>
+        <button class="btn secondary" style="width:100%;margin-top:10px;" onclick="switchView('settings')">+ Add / Edit Exercises in Settings →</button>
       </div>
 
       <div class="card">
@@ -406,34 +410,48 @@
 
   <!-- SETTINGS -->
   <section class="view" id="view-settings">
-    <div class="grid cols-2">
-      <div class="card">
-        <h2>Your Profile</h2>
-        <div class="hint">Used to set your starting baseline weights, and to estimate calories burned per workout.</div>
-        <label>Height</label>
-        <input type="text" id="profHeight">
-        <label>Bodyweight (lb)</label>
-        <input type="number" id="profWeight">
-        <label>Build</label>
-        <select id="profBuild">
-          <option value="lean">Lean / beginner</option>
-          <option value="athletic-medium">Medium athletic</option>
-          <option value="muscular">Muscular / advanced</option>
-        </select>
-        <label>Program start date</label>
-        <input type="date" id="profStartDate">
-        <div class="hint" style="margin-top:6px;">Overload climbs are counted from this date, every other week.</div>
-        <button class="btn" style="width:100%;margin-top:14px;" onclick="saveProfile()">Save Profile</button>
+    <div class="card" style="margin-bottom:16px;">
+      <h2>Your Profile</h2>
+      <div class="hint">Used to set your starting baseline weights, and to estimate calories burned per workout.</div>
+      <div class="grid cols-2">
+        <div>
+          <label>Height</label>
+          <input type="text" id="profHeight">
+          <label>Bodyweight (lb)</label>
+          <input type="number" id="profWeight">
+        </div>
+        <div>
+          <label>Build</label>
+          <select id="profBuild">
+            <option value="lean">Lean / beginner</option>
+            <option value="athletic-medium">Medium athletic</option>
+            <option value="muscular">Muscular / advanced</option>
+          </select>
+          <label>Program start date</label>
+          <input type="date" id="profStartDate">
+        </div>
       </div>
-
-      <div class="card">
-        <h2>Exercise Baselines</h2>
-        <div class="hint">Edit baseline weight or overload increment for any exercise.</div>
-        <div id="settingsExerciseList"></div>
-      </div>
+      <div class="hint" style="margin-top:6px;">Overload climbs are counted from this date, every other week.</div>
+      <button class="btn" style="width:100%;margin-top:14px;" onclick="saveProfile()">Save Profile</button>
     </div>
 
-    <div class="card" style="margin-top:16px;">
+    <div class="card" style="margin-bottom:16px;">
+      <div class="flex-between">
+        <div>
+          <h2>Exercise Library</h2>
+          <div class="hint" style="margin-bottom:0;">Fully customize your workouts — name, icon, category, equipment, and prescription. Organized by category below.</div>
+        </div>
+        <button class="btn secondary" style="flex:0 0 auto;" onclick="toggleExerciseBuilder()" id="builderToggleBtn">+ Add Exercise</button>
+      </div>
+      <div id="exerciseBuilder" style="display:none;margin-top:14px;"></div>
+      <div class="row" style="margin-top:16px;">
+        <select id="settingsCategoryFilter" onchange="renderSettingsExerciseList()"><option value="">All categories</option></select>
+        <select id="settingsEquipmentFilter" onchange="renderSettingsExerciseList()"><option value="">All equipment</option></select>
+      </div>
+      <div id="settingsExerciseList" style="margin-top:14px;"></div>
+    </div>
+
+    <div class="card">
       <h2>Data</h2>
       <div class="hint">Your data lives only in this browser's storage — refreshing is safe, but clearing site data, using a different browser, or a new device will not have it. Export a backup regularly.</div>
       <div class="row">
@@ -489,64 +507,282 @@ const DEFAULT_PROFILE = {
   startDate: todayStr()
 };
 
-// Baseline weights calibrated for a BEGINNER lifter — light enough to learn good
-// form on. Every exercise starts at the same detailed prescription: 3 sets × 10 reps
-// (targetSets / targetReps below). Weight climbs a small amount every other week.
+/* ---------------- Categories, equipment & icons (full customization) ---------------- */
+// "What it's for" — the muscle-group / movement dropdown. Each has a badge color and
+// a default icon (used when an exercise doesn't have its own icon chosen).
+const CATEGORIES = [
+  { id:'legs-compound',  label:'Legs — Compound',      color:'var(--accent)',  defaultIcon:'legs' },
+  { id:'legs-isolation', label:'Legs — Isolation',     color:'var(--legiso)',  defaultIcon:'calf' },
+  { id:'glutes',         label:'Glutes',               color:'var(--glute)',   defaultIcon:'glutes' },
+  { id:'chest',          label:'Chest',                color:'var(--blue)',    defaultIcon:'chest' },
+  { id:'back',           label:'Back',                 color:'var(--purple)',  defaultIcon:'back' },
+  { id:'shoulders',      label:'Shoulders',            color:'var(--accent2)', defaultIcon:'shoulders' },
+  { id:'biceps',         label:'Biceps',               color:'var(--warn)',    defaultIcon:'biceps' },
+  { id:'triceps',        label:'Triceps',              color:'var(--tricep)',  defaultIcon:'triceps' },
+  { id:'core',           label:'Core / Abs',           color:'var(--core)',    defaultIcon:'core' },
+  { id:'fullbody',       label:'Full Body',            color:'#ff8a5c',        defaultIcon:'fullbody' },
+  { id:'conditioning',   label:'Conditioning / Cardio',color:'#4fd1c5',        defaultIcon:'stopwatch' }
+];
+// How it's loaded — Speediance, free weights, machines, or bodyweight-only.
+const EQUIPMENT_TYPES = [
+  { id:'speediance', label:'Speediance' },
+  { id:'freeweight',  label:'Free Weight' },
+  { id:'machine',     label:'Machine / Cable' },
+  { id:'bodyweight',  label:'Bodyweight' }
+];
+function categoryDef(catId){ return CATEGORIES.find(c=>c.id===catId); }
+function categoryLabel(catId){ const c = categoryDef(catId); return c ? c.label : (catId==='activity' ? 'Activity' : catId); }
+function equipmentLabel(eqId){ const e = EQUIPMENT_TYPES.find(x=>x.id===eqId); return e ? e.label : ''; }
+
+// 30 icon glyphs to choose from when building an exercise, plus one reserved 'activity'
+// icon used only for Basketball/Other Sport day types (not offered in the exercise picker).
+const ICON_LIBRARY = {
+  legs:       { label:'Legs',            svg:`<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M9 3h6"/><path d="M10 3v5l-3 13"/><path d="M14 3v5l3 13"/><path d="M9 12h6"/></svg>` },
+  calf:       { label:'Calf',            svg:`<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M9 3h6"/><path d="M10 3v8l-2 10"/><path d="M14 3v8l2 10"/><path d="M6 21h4M14 21h4"/></svg>` },
+  glutes:     { label:'Glutes',          svg:`<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M4 17c2-7 6-10 8-10s6 3 8 10"/><path d="M4 17h16"/></svg>` },
+  chest:      { label:'Chest',           svg:`<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M12 4c-3 0-5.5 2-6.5 5-1.2 4 1 9.5 6.5 11.5 5.5-2 7.7-7.5 6.5-11.5-1-3-3.5-5-6.5-5z"/></svg>` },
+  back:       { label:'Back',            svg:`<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M12 3v7"/><path d="M9 6l3-3 3 3"/><path d="M7 21l5-8 5 8"/></svg>` },
+  shoulders:  { label:'Shoulders',       svg:`<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><circle cx="6" cy="9" r="3"/><circle cx="18" cy="9" r="3"/><path d="M6 12v8M18 12v8"/></svg>` },
+  biceps:     { label:'Biceps',          svg:`<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M5 19c-1-7 1-12 6-12 3 0 3.5 3 1 4.5-3 1.8-1.5 5.5 3 5"/><circle cx="16" cy="8" r="2"/></svg>` },
+  triceps:    { label:'Triceps',         svg:`<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M5 7l7 7-7 7"/><path d="M12 14h7"/></svg>` },
+  core:       { label:'Core',            svg:`<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><rect x="7" y="4" width="10" height="16" rx="3"/><path d="M7 9.5h10M7 14.5h10M12 4v16"/></svg>` },
+  fullbody:   { label:'Full Body',       svg:`<svg viewBox="0 0 24 24" fill="currentColor" stroke="none"><path d="M13 2 3 14h7l-1 8 11-14h-8l1-6z"/></svg>` },
+  stopwatch:  { label:'Timed',           svg:`<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="13" r="8"/><path d="M12 13V8M9 3h6M12 3v1.5"/></svg>` },
+  barbell:    { label:'Barbell',         svg:`<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M2 12h20"/><path d="M5 8v8M19 8v8"/><path d="M2 9.5v5M22 9.5v5"/></svg>` },
+  dumbbell:   { label:'Dumbbell',        svg:`<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M6 9v6M18 9v6"/><rect x="4" y="8" width="3" height="8" rx="1"/><rect x="17" y="8" width="3" height="8" rx="1"/><path d="M7 12h10"/></svg>` },
+  kettlebell: { label:'Kettlebell',      svg:`<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="15" r="6"/><path d="M9 9.5a3 3 0 0 1 6 0V11H9V9.5z"/></svg>` },
+  plate:      { label:'Plate',           svg:`<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><circle cx="12" cy="12" r="9"/><circle cx="12" cy="12" r="3"/></svg>` },
+  bench:      { label:'Bench',           svg:`<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M3 9h18"/><path d="M6 6v6M18 6v6"/><rect x="8" y="14" width="8" height="3" rx="1"/><path d="M9 17v3M15 17v3"/></svg>` },
+  rack:       { label:'Rack / Machine',  svg:`<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M5 3v18M19 3v18M5 9h14"/><path d="M3 21h4M17 21h4"/></svg>` },
+  pulley:     { label:'Cable Pulley',    svg:`<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="4" r="2"/><path d="M12 6v9"/><path d="M8 20l4-5 4 5"/></svg>` },
+  pulldown:   { label:'Pulldown',        svg:`<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M12 2v8"/><path d="M9 7l3 3 3-3"/><path d="M5 17h14"/><path d="M7 17v4M17 17v4"/></svg>` },
+  pullupbar:  { label:'Pull-Up Bar',     svg:`<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M4 5h16"/><path d="M9 5v3M15 5v3"/><circle cx="12" cy="11" r="1.5"/><path d="M12 12.5v4"/><path d="M12 14l-3 3M12 14l3 3"/></svg>` },
+  dipbars:    { label:'Dip Bars',        svg:`<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M6 4v16M18 4v16"/><path d="M4 9h4M16 9h4"/></svg>` },
+  rowmachine: { label:'Rowing Machine',  svg:`<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M2 19h20"/><rect x="4" y="15" width="4" height="4" rx="1"/><path d="M8 17h9"/><path d="M17 13l3 4"/></svg>` },
+  treadmill:  { label:'Treadmill',       svg:`<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><rect x="2" y="17" width="15" height="3" rx="1"/><path d="M17 17l3-7"/><circle cx="10" cy="6" r="1.6"/><path d="M10 7.5v4l-2.5 4.5M10 11.5l3 3"/></svg>` },
+  bike:       { label:'Bike',            svg:`<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><circle cx="6" cy="17" r="3.2"/><circle cx="18" cy="17" r="3.2"/><path d="M6 17l5-9h4l3 9"/><path d="M11 8h-3"/></svg>` },
+  jumprope:   { label:'Jump Rope',       svg:`<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="4" r="1.6"/><path d="M12 6.5v5l-3 6"/><path d="M12 11.5l3 6"/><path d="M4 10c2-6 6-8 8-8s6 2 8 8"/></svg>` },
+  medball:    { label:'Medicine Ball',   svg:`<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><circle cx="12" cy="12" r="9"/><path d="M3 12h18M12 3v18"/></svg>` },
+  band:       { label:'Resistance Band', svg:`<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><circle cx="4" cy="12" r="1.5"/><circle cx="20" cy="12" r="1.5"/><path d="M5.5 12c3-5 6 5 9 0s3-5 4.5-5"/></svg>` },
+  ropes:      { label:'Battle Ropes',    svg:`<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><circle cx="3" cy="12" r="1.4"/><path d="M4 8c5 2 5 6 9 8s5 2 8-1"/><path d="M4 16c5-2 5-6 9-8s5-2 8 1"/></svg>` },
+  boxjump:    { label:'Box Jump',        svg:`<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><rect x="4" y="12" width="11" height="8"/><path d="M19 10V3"/><path d="M16 6l3-3 3 3"/></svg>` },
+  speediance: { label:'Speediance',      svg:`<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><rect x="9" y="2" width="6" height="20" rx="1"/><path d="M9 8H3M15 8h6M9 15H3M15 15h6"/></svg>` },
+  activity:   { label:'Activity',        svg:`<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="9"/><path d="M12 3v18M3 12h18M5.7 5.7c2.8 3.5 2.8 9.1 0 12.6M18.3 5.7c-2.8 3.5-2.8 9.1 0 12.6"/></svg>` }
+};
+// The 30 keys offered in the "pick an icon" picker (everything except the reserved 'activity' one).
+const PICKABLE_ICON_KEYS = Object.keys(ICON_LIBRARY).filter(k=>k!=='activity');
+
+function iconBadge(ex, size){
+  const cat = ex.category;
+  const def = categoryDef(cat);
+  const key = ex.icon || (def ? def.defaultIcon : 'activity');
+  const info = ICON_LIBRARY[key] || ICON_LIBRARY['legs'];
+  const cls = 'ex-icon cat-' + cat + (size==='sm' ? ' sm' : '');
+  const label = def ? def.label : 'Activity';
+  return `<div class="${cls}" title="${label}">${info.svg}</div>`;
+}
+function prescriptionLabel(ex){
+  if(ex.repsAreTime) return `${ex.targetSets||4} rounds × ${ex.targetReps} work`;
+  if(ex.unit === 'seconds') return `${ex.targetSets||3} sets × hold`;
+  return `${ex.targetSets||3} sets × ${ex.targetReps||10} reps`;
+}
+// Best-guess numeric reps to pre-fill a set row with. Returns '' when the
+// exercise is a timed circuit move (e.g. "40s work") where a rep count doesn't apply.
+function defaultRepsValue(ex){
+  if(!ex) return 10;
+  if(ex.repsAreTime) return '';
+  const n = parseInt(String(ex.targetReps), 10);
+  return isNaN(n) ? 10 : n;
+}
+// Rough time-to-complete an exercise as prescribed. Assumes ~12–15 reps and 4 sets
+// where an exercise doesn't specify otherwise, ~3s per rep, plus your current rest
+// timer setting between sets.
+function estimatedMinutes(ex){
+  const sets = ex.targetSets || 4;
+  let reps = parseInt(String(ex.targetReps), 10);
+  if(isNaN(reps)) reps = 13; // midpoint of the assumed 12–15 rep range
+  const restSeconds = (typeof timerTotal === 'number' && timerTotal > 0) ? timerTotal : 60;
+  const totalSeconds = sets * (reps * 3 + restSeconds);
+  return Math.max(1, Math.round(totalSeconds / 60));
+}
+function fmtMinutes(ex){ return '~' + estimatedMinutes(ex) + ' min'; }
+function prescriptionWithTime(ex){ return prescriptionLabel(ex) + ' · ' + fmtMinutes(ex); }
+
+// Baseline weights calibrated for a BEGINNER lifter. Unless otherwise noted, new
+// library entries default to 4 sets × 12–15 reps (per your own workout-day exercises
+// keep whatever specific scheme they were built with).
 const DEFAULT_EXERCISES = [
-  { id:'squat',         name:'Barbell Back Squat',              category:'lower-compound',  baseline:45,  increment:5,  unit:'lb', targetSets:3, targetReps:10 },
-  { id:'deadlift',      name:'Deadlift',                        category:'lower-compound',  baseline:65,  increment:5,  unit:'lb', targetSets:3, targetReps:10 },
-  { id:'legpress',      name:'Leg Press',                       category:'lower-compound',  baseline:90,  increment:10, unit:'lb', targetSets:3, targetReps:10 },
-  { id:'bench',         name:'Barbell Bench Press',             category:'upper-compound',  baseline:45,  increment:5,  unit:'lb', targetSets:3, targetReps:10 },
-  { id:'row',           name:'Barbell Row',                     category:'upper-compound',  baseline:45,  increment:5,  unit:'lb', targetSets:3, targetReps:10 },
-  { id:'ohp',           name:'Overhead Press',                  category:'upper-compound',  baseline:35,  increment:2.5,unit:'lb', targetSets:3, targetReps:10 },
-  { id:'pushup',        name:'Push-Up',                         category:'bodyweight',      baseline:10,  increment:2,  unit:'reps', targetSets:3, targetReps:10 },
-  { id:'plank',         name:'Plank Hold',                      category:'bodyweight',      baseline:20,  increment:10, unit:'seconds', targetSets:3, targetReps:10 },
+  // ================= LEGS — COMPOUND =================
+  { id:'squat',         name:'Barbell Back Squat',        category:'legs-compound', equipment:'freeweight', icon:'barbell',   baseline:45, increment:5,  unit:'lb', targetSets:3, targetReps:10 },
+  { id:'deadlift',      name:'Deadlift',                  category:'legs-compound', equipment:'freeweight', icon:'barbell',   baseline:65, increment:5,  unit:'lb', targetSets:3, targetReps:10 },
+  { id:'legpress',      name:'Leg Press',                 category:'legs-compound', equipment:'machine',    icon:'rack',      baseline:90, increment:10, unit:'lb', targetSets:3, targetReps:10 },
+  { id:'gobletsquat',   name:'Goblet / Speediance Squat',           category:'legs-compound', equipment:'speediance', icon:'speediance', baseline:20, increment:5, unit:'lb', targetSets:4, targetReps:'8–10' },
+  { id:'frontsquat',    name:'Front Squat',               category:'legs-compound', equipment:'freeweight', icon:'barbell',   baseline:35, increment:5,  unit:'lb', targetSets:4, targetReps:'12–15' },
+  { id:'sumodeadlift',  name:'Sumo Deadlift',              category:'legs-compound', equipment:'freeweight', icon:'barbell',   baseline:65, increment:5,  unit:'lb', targetSets:4, targetReps:'12–15' },
+  { id:'trapbardl',     name:'Trap Bar Deadlift',          category:'legs-compound', equipment:'freeweight', icon:'barbell',   baseline:65, increment:5,  unit:'lb', targetSets:4, targetReps:'12–15' },
+  { id:'speediancesquat', name:'Speediance Squat',         category:'legs-compound', equipment:'speediance', icon:'speediance', baseline:30, increment:5, unit:'lb', targetSets:4, targetReps:'12–15' },
+  { id:'bulgariansplitsquat', name:'Bulgarian Split Squat', category:'legs-compound', equipment:'freeweight', icon:'dumbbell',  baseline:15, increment:2.5, unit:'lb', targetSets:4, targetReps:'12–15' },
+  { id:'hacksquat',     name:'Hack Squat',                 category:'legs-compound', equipment:'machine',    icon:'rack',      baseline:90, increment:10, unit:'lb', targetSets:4, targetReps:'12–15' },
+  { id:'speedianceleg press', name:'Speediance Leg Press', category:'legs-compound', equipment:'speediance', icon:'speediance', baseline:40, increment:5, unit:'lb', targetSets:4, targetReps:'12–15' },
+  { id:'stepup',        name:'Dumbbell Step-Up',           category:'legs-compound', equipment:'freeweight', icon:'dumbbell',  baseline:10, increment:2.5, unit:'lb', targetSets:4, targetReps:'12–15' },
 
-  // --- Day 1: Push (Chest, Shoulders, Triceps) ---
-  { id:'chestpress_speed', name:'Speediance Chest Press',       category:'upper-compound',  baseline:20,  increment:5,  unit:'lb', targetSets:4, targetReps:'8–10' },
-  { id:'dbshoulder',       name:'Dumbbell Shoulder Press',      category:'accessory',       baseline:10,  increment:2.5,unit:'lb', targetSets:3, targetReps:'8–10' },
-  { id:'cablefly_speed',   name:'Speediance Cable Fly',         category:'accessory',       baseline:10,  increment:2.5,unit:'lb', targetSets:3, targetReps:'12–15' },
-  { id:'inclinedbpress',   name:'Incline Dumbbell Press',       category:'upper-compound',  baseline:15,  increment:2.5,unit:'lb', targetSets:3, targetReps:10 },
-  { id:'lateralraise',     name:'Lateral Raises',               category:'accessory',       baseline:5,   increment:2.5,unit:'lb', targetSets:3, targetReps:'12–15' },
-  { id:'tricepspushdown',  name:'Cable Triceps Pushdown',       category:'accessory',       baseline:15,  increment:5,  unit:'lb', targetSets:3, targetReps:12 },
+  // ================= LEGS — ISOLATION =================
+  { id:'calfraise',     name:'Calf Raises',                category:'legs-isolation', equipment:'freeweight', icon:'calf', baseline:20, increment:5, unit:'lb', targetSets:3, targetReps:15 },
+  { id:'legextension',  name:'Leg Extension',              category:'legs-isolation', equipment:'machine',    icon:'rack', baseline:30, increment:5, unit:'lb', targetSets:4, targetReps:'12–15' },
+  { id:'lyinglegcurl',  name:'Lying Leg Curl',             category:'legs-isolation', equipment:'machine',    icon:'rack', baseline:30, increment:5, unit:'lb', targetSets:4, targetReps:'12–15' },
+  { id:'seatedlegcurl', name:'Seated Leg Curl',            category:'legs-isolation', equipment:'machine',    icon:'rack', baseline:30, increment:5, unit:'lb', targetSets:4, targetReps:'12–15' },
+  { id:'speedianceextension', name:'Speediance Leg Extension', category:'legs-isolation', equipment:'speediance', icon:'speediance', baseline:20, increment:5, unit:'lb', targetSets:4, targetReps:'12–15' },
+  { id:'speediancelegcurl', name:'Speediance Leg Curl',    category:'legs-isolation', equipment:'speediance', icon:'speediance', baseline:20, increment:5, unit:'lb', targetSets:4, targetReps:'12–15' },
+  { id:'seatedcalfraise', name:'Seated Calf Raise',        category:'legs-isolation', equipment:'machine',    icon:'rack', baseline:45, increment:5, unit:'lb', targetSets:4, targetReps:'12–15' },
+  { id:'standingcalfraise', name:'Standing Calf Raise',    category:'legs-isolation', equipment:'machine',    icon:'rack', baseline:45, increment:5, unit:'lb', targetSets:4, targetReps:'12–15' },
+  { id:'dbcalfraise',   name:'Dumbbell Calf Raise',        category:'legs-isolation', equipment:'freeweight', icon:'dumbbell', baseline:20, increment:2.5, unit:'lb', targetSets:4, targetReps:'12–15' },
+  { id:'adductor',      name:'Hip Adductor Machine',       category:'legs-isolation', equipment:'machine',    icon:'rack', baseline:30, increment:5, unit:'lb', targetSets:4, targetReps:'12–15' },
+  { id:'abductor',      name:'Hip Abductor Machine',       category:'legs-isolation', equipment:'machine',    icon:'rack', baseline:30, increment:5, unit:'lb', targetSets:4, targetReps:'12–15' },
 
-  // --- Day 2: Pull (Back, Biceps) ---
-  { id:'latpull',        name:'Speediance Lat Pulldown',        category:'upper-accessory', baseline:40,  increment:5,  unit:'lb', targetSets:4, targetReps:'8–10' },
-  { id:'seatedrow_speed',name:'Speediance Seated Row',          category:'upper-accessory', baseline:30,  increment:5,  unit:'lb', targetSets:3, targetReps:10 },
-  { id:'dbbentrow',      name:'Dumbbell Bent-Over Row',         category:'upper-accessory', baseline:15,  increment:2.5,unit:'lb', targetSets:3, targetReps:10 },
-  { id:'facepull',       name:'Face Pulls',                     category:'upper-accessory', baseline:15,  increment:2.5,unit:'lb', targetSets:3, targetReps:15 },
-  { id:'curl',           name:'Dumbbell Bicep Curl',            category:'accessory',       baseline:10,  increment:2.5,unit:'lb', targetSets:3, targetReps:12 },
-  { id:'hammercurl',     name:'Hammer Curl',                    category:'accessory',       baseline:10,  increment:2.5,unit:'lb', targetSets:3, targetReps:12 },
+  // ================= GLUTES =================
+  { id:'dbrdl',         name:'Dumbbell Romanian Deadlift', category:'glutes', equipment:'freeweight', icon:'dumbbell', baseline:20, increment:5, unit:'lb', targetSets:3, targetReps:10 },
+  { id:'hipthrust',     name:'Barbell Hip Thrust',         category:'glutes', equipment:'freeweight', icon:'barbell', baseline:45, increment:5, unit:'lb', targetSets:4, targetReps:'12–15' },
+  { id:'glutebridge',   name:'Barbell Glute Bridge',       category:'glutes', equipment:'freeweight', icon:'barbell', baseline:45, increment:5, unit:'lb', targetSets:4, targetReps:'12–15' },
+  { id:'cablekickback', name:'Cable Glute Kickback',       category:'glutes', equipment:'machine',    icon:'pulley', baseline:10, increment:2.5, unit:'lb', targetSets:4, targetReps:'12–15' },
+  { id:'speedianceglutekickback', name:'Speediance Glute Kickback', category:'glutes', equipment:'speediance', icon:'speediance', baseline:10, increment:2.5, unit:'lb', targetSets:4, targetReps:'12–15' },
+  { id:'curtsylunge',   name:'Curtsy Lunge',               category:'glutes', equipment:'freeweight', icon:'dumbbell', baseline:10, increment:2.5, unit:'lb', targetSets:4, targetReps:'12–15' },
+  { id:'singlelegbridge', name:'Single-Leg Glute Bridge',  category:'glutes', equipment:'bodyweight', icon:'glutes', baseline:10, increment:2, unit:'reps', targetSets:4, targetReps:'12–15' },
+  { id:'sumosquat',     name:'Dumbbell Sumo Squat',        category:'glutes', equipment:'freeweight', icon:'dumbbell', baseline:20, increment:2.5, unit:'lb', targetSets:4, targetReps:'12–15' },
+  { id:'speediancehipthrust', name:'Speediance Hip Thrust', category:'glutes', equipment:'speediance', icon:'speediance', baseline:20, increment:5, unit:'lb', targetSets:4, targetReps:'12–15' },
+  { id:'donkeykick',    name:'Donkey Kick',                category:'glutes', equipment:'bodyweight', icon:'glutes', baseline:12, increment:2, unit:'reps', targetSets:4, targetReps:'12–15' },
 
-  // --- Day 3: Legs (Quads, Hamstrings, Glutes, Calves) ---
-  { id:'gobletsquat', name:'Goblet / Speediance Squat',         category:'lower-compound',  baseline:20,  increment:5,  unit:'lb', targetSets:4, targetReps:'8–10' },
-  { id:'dbrdl',        name:'Dumbbell Romanian Deadlift',       category:'lower-compound',  baseline:20,  increment:5,  unit:'lb', targetSets:3, targetReps:10 },
-  { id:'lunge',        name:'Speediance Cable Lunge / Walking Lunge', category:'accessory',  baseline:10,  increment:2.5,unit:'lb', targetSets:3, targetReps:'12/leg' },
-  { id:'calfraise',    name:'Calf Raises',                      category:'lower-compound',  baseline:20,  increment:5,  unit:'lb', targetSets:3, targetReps:15 },
+  // ================= CHEST =================
+  { id:'bench',         name:'Barbell Bench Press',        category:'chest', equipment:'freeweight', icon:'bench', baseline:45, increment:5, unit:'lb', targetSets:3, targetReps:10 },
+  { id:'pushup',        name:'Push-Up',                    category:'chest', equipment:'bodyweight', icon:'chest', baseline:10, increment:2, unit:'reps', targetSets:3, targetReps:10 },
+  { id:'chestpress_speed', name:'Speediance Chest Press',  category:'chest', equipment:'speediance', icon:'speediance', baseline:20, increment:5, unit:'lb', targetSets:4, targetReps:'8–10' },
+  { id:'cablefly_speed',   name:'Speediance Cable Fly',    category:'chest', equipment:'speediance', icon:'speediance', baseline:10, increment:2.5, unit:'lb', targetSets:3, targetReps:'12–15' },
+  { id:'inclinedbpress',   name:'Incline Dumbbell Press',  category:'chest', equipment:'freeweight', icon:'dumbbell', baseline:15, increment:2.5, unit:'lb', targetSets:3, targetReps:10 },
+  { id:'inclinebarbell',  name:'Incline Barbell Bench Press', category:'chest', equipment:'freeweight', icon:'barbell', baseline:45, increment:5, unit:'lb', targetSets:4, targetReps:'12–15' },
+  { id:'declinebench',    name:'Decline Bench Press',      category:'chest', equipment:'freeweight', icon:'bench', baseline:45, increment:5, unit:'lb', targetSets:4, targetReps:'12–15' },
+  { id:'dbbench',         name:'Dumbbell Bench Press',     category:'chest', equipment:'freeweight', icon:'dumbbell', baseline:20, increment:2.5, unit:'lb', targetSets:4, targetReps:'12–15' },
+  { id:'dbfly',           name:'Dumbbell Fly',             category:'chest', equipment:'freeweight', icon:'dumbbell', baseline:10, increment:2.5, unit:'lb', targetSets:4, targetReps:'12–15' },
+  { id:'speedianceinclinepress', name:'Speediance Incline Press', category:'chest', equipment:'speediance', icon:'speediance', baseline:20, increment:5, unit:'lb', targetSets:4, targetReps:'12–15' },
+  { id:'machinechestpress', name:'Machine Chest Press',    category:'chest', equipment:'machine', icon:'rack', baseline:30, increment:5, unit:'lb', targetSets:4, targetReps:'12–15' },
+  { id:'pecdeck',          name:'Pec Deck Fly',            category:'chest', equipment:'machine', icon:'rack', baseline:20, increment:5, unit:'lb', targetSets:4, targetReps:'12–15' },
+  { id:'chestdip',         name:'Chest Dip',               category:'chest', equipment:'bodyweight', icon:'dipbars', baseline:10, increment:2, unit:'reps', targetSets:4, targetReps:'12–15' },
+  { id:'landminepress',    name:'Landmine Press',          category:'chest', equipment:'freeweight', icon:'barbell', baseline:25, increment:5, unit:'lb', targetSets:4, targetReps:'12–15' },
+  { id:'speediancefly',    name:'Speediance Fly',          category:'chest', equipment:'speediance', icon:'speediance', baseline:10, increment:2.5, unit:'lb', targetSets:4, targetReps:'12–15' },
 
-  // --- Day 4: Full Body + Conditioning (circuit x4 rounds, 40s work / 20s rest) ---
-  { id:'squattopress', name:'Speediance Squat-to-Press',        category:'fullbody',     baseline:15, increment:2.5, unit:'lb',   targetSets:4, targetReps:'40s', repsAreTime:true },
-  { id:'renegaderow',  name:'Dumbbell Renegade Row',            category:'fullbody',     baseline:10, increment:2.5, unit:'lb',   targetSets:4, targetReps:'40s', repsAreTime:true },
-  { id:'kbswing',      name:'Kettlebell / Dumbbell Swing',      category:'conditioning', baseline:15, increment:2.5, unit:'lb',   targetSets:4, targetReps:'40s', repsAreTime:true },
-  { id:'mtnclimbers',  name:'Mountain Climbers',                category:'conditioning', baseline:0,  increment:0,   unit:'reps', targetSets:4, targetReps:'40s', repsAreTime:true }
+  // ================= BACK =================
+  { id:'row',            name:'Barbell Row',               category:'back', equipment:'freeweight', icon:'barbell', baseline:45, increment:5, unit:'lb', targetSets:3, targetReps:10 },
+  { id:'latpull',        name:'Speediance Lat Pulldown',   category:'back', equipment:'speediance', icon:'speediance', baseline:40, increment:5, unit:'lb', targetSets:4, targetReps:'8–10' },
+  { id:'seatedrow_speed',name:'Speediance Seated Row',     category:'back', equipment:'speediance', icon:'speediance', baseline:30, increment:5, unit:'lb', targetSets:3, targetReps:10 },
+  { id:'dbbentrow',      name:'Dumbbell Bent-Over Row',    category:'back', equipment:'freeweight', icon:'dumbbell', baseline:15, increment:2.5, unit:'lb', targetSets:3, targetReps:10 },
+  { id:'facepull',       name:'Face Pulls',                category:'back', equipment:'machine', icon:'pulley', baseline:15, increment:2.5, unit:'lb', targetSets:3, targetReps:15 },
+  { id:'pullup',         name:'Pull-Up',                   category:'back', equipment:'bodyweight', icon:'pullupbar', baseline:5, increment:1, unit:'reps', targetSets:4, targetReps:'12–15' },
+  { id:'chinup',         name:'Chin-Up',                   category:'back', equipment:'bodyweight', icon:'pullupbar', baseline:5, increment:1, unit:'reps', targetSets:4, targetReps:'12–15' },
+  { id:'tbarrow',        name:'T-Bar Row',                 category:'back', equipment:'freeweight', icon:'barbell', baseline:45, increment:5, unit:'lb', targetSets:4, targetReps:'12–15' },
+  { id:'singlearmrow',   name:'Single-Arm Dumbbell Row',   category:'back', equipment:'freeweight', icon:'dumbbell', baseline:20, increment:2.5, unit:'lb', targetSets:4, targetReps:'12–15' },
+  { id:'speediancepulldown', name:'Speediance Pulldown',   category:'back', equipment:'speediance', icon:'speediance', baseline:30, increment:5, unit:'lb', targetSets:4, targetReps:'12–15' },
+  { id:'cablerowwide',   name:'Cable Row (Wide Grip)',     category:'back', equipment:'machine', icon:'pulley', baseline:30, increment:5, unit:'lb', targetSets:4, targetReps:'12–15' },
+  { id:'straightarmpulldown', name:'Straight-Arm Pulldown', category:'back', equipment:'machine', icon:'pulldown', baseline:15, increment:2.5, unit:'lb', targetSets:4, targetReps:'12–15' },
+  { id:'widegriplatpulldown', name:'Wide-Grip Lat Pulldown', category:'back', equipment:'machine', icon:'pulldown', baseline:40, increment:5, unit:'lb', targetSets:4, targetReps:'12–15' },
+  { id:'speediancebentoverrow', name:'Speediance Bent-Over Row', category:'back', equipment:'speediance', icon:'speediance', baseline:20, increment:5, unit:'lb', targetSets:4, targetReps:'12–15' },
+  { id:'invertedrow',    name:'Inverted Row',              category:'back', equipment:'bodyweight', icon:'pullupbar', baseline:10, increment:2, unit:'reps', targetSets:4, targetReps:'12–15' },
+  { id:'rackpull',       name:'Rack Pull',                 category:'back', equipment:'freeweight', icon:'barbell', baseline:65, increment:5, unit:'lb', targetSets:4, targetReps:'12–15' },
+  { id:'bandpullapart',  name:'Band Pull-Apart',           category:'back', equipment:'machine', icon:'band', baseline:5, increment:1, unit:'lb', targetSets:4, targetReps:'12–15' },
+
+  // ================= SHOULDERS =================
+  { id:'ohp',            name:'Overhead Press',            category:'shoulders', equipment:'freeweight', icon:'barbell', baseline:35, increment:2.5, unit:'lb', targetSets:3, targetReps:10 },
+  { id:'dbshoulder',     name:'Dumbbell Shoulder Press',   category:'shoulders', equipment:'freeweight', icon:'dumbbell', baseline:10, increment:2.5, unit:'lb', targetSets:3, targetReps:'8–10' },
+  { id:'lateralraise',   name:'Lateral Raises',            category:'shoulders', equipment:'freeweight', icon:'dumbbell', baseline:5, increment:2.5, unit:'lb', targetSets:3, targetReps:'12–15' },
+  { id:'arnoldpress',    name:'Arnold Press',              category:'shoulders', equipment:'freeweight', icon:'dumbbell', baseline:10, increment:2.5, unit:'lb', targetSets:4, targetReps:'12–15' },
+  { id:'militarypress',  name:'Military Press',            category:'shoulders', equipment:'freeweight', icon:'barbell', baseline:35, increment:2.5, unit:'lb', targetSets:4, targetReps:'12–15' },
+  { id:'speedianceshoulderpress', name:'Speediance Shoulder Press', category:'shoulders', equipment:'speediance', icon:'speediance', baseline:15, increment:2.5, unit:'lb', targetSets:4, targetReps:'12–15' },
+  { id:'frontraise',     name:'Front Raise',               category:'shoulders', equipment:'freeweight', icon:'dumbbell', baseline:5, increment:2.5, unit:'lb', targetSets:4, targetReps:'12–15' },
+  { id:'reardeltfly',    name:'Rear Delt Fly',             category:'shoulders', equipment:'freeweight', icon:'dumbbell', baseline:5, increment:2.5, unit:'lb', targetSets:4, targetReps:'12–15' },
+  { id:'uprightrow',     name:'Upright Row',               category:'shoulders', equipment:'freeweight', icon:'barbell', baseline:30, increment:2.5, unit:'lb', targetSets:4, targetReps:'12–15' },
+  { id:'speediancelateralraise', name:'Speediance Lateral Raise', category:'shoulders', equipment:'speediance', icon:'speediance', baseline:10, increment:2.5, unit:'lb', targetSets:4, targetReps:'12–15' },
+  { id:'machineshoulderpress', name:'Machine Shoulder Press', category:'shoulders', equipment:'machine', icon:'rack', baseline:30, increment:5, unit:'lb', targetSets:4, targetReps:'12–15' },
+  { id:'cablelateralraise', name:'Cable Lateral Raise',    category:'shoulders', equipment:'machine', icon:'pulley', baseline:5, increment:2.5, unit:'lb', targetSets:4, targetReps:'12–15' },
+
+  // ================= BICEPS =================
+  { id:'curl',           name:'Dumbbell Bicep Curl',       category:'biceps', equipment:'freeweight', icon:'dumbbell', baseline:10, increment:2.5, unit:'lb', targetSets:3, targetReps:12 },
+  { id:'hammercurl',     name:'Hammer Curl',               category:'biceps', equipment:'freeweight', icon:'dumbbell', baseline:10, increment:2.5, unit:'lb', targetSets:3, targetReps:12 },
+  { id:'barbellcurl',    name:'Barbell Curl',              category:'biceps', equipment:'freeweight', icon:'barbell', baseline:20, increment:2.5, unit:'lb', targetSets:4, targetReps:'12–15' },
+  { id:'preachercurl',   name:'Preacher Curl',             category:'biceps', equipment:'freeweight', icon:'barbell', baseline:20, increment:2.5, unit:'lb', targetSets:4, targetReps:'12–15' },
+  { id:'concentrationcurl', name:'Concentration Curl',     category:'biceps', equipment:'freeweight', icon:'dumbbell', baseline:10, increment:2.5, unit:'lb', targetSets:4, targetReps:'12–15' },
+  { id:'cablecurl',      name:'Cable Curl',                category:'biceps', equipment:'machine', icon:'pulley', baseline:15, increment:2.5, unit:'lb', targetSets:4, targetReps:'12–15' },
+  { id:'speediancecurl', name:'Speediance Bicep Curl',     category:'biceps', equipment:'speediance', icon:'speediance', baseline:10, increment:2.5, unit:'lb', targetSets:4, targetReps:'12–15' },
+  { id:'inclinedbcurl',  name:'Incline Dumbbell Curl',     category:'biceps', equipment:'freeweight', icon:'dumbbell', baseline:10, increment:2.5, unit:'lb', targetSets:4, targetReps:'12–15' },
+  { id:'zottmancurl',    name:'Zottman Curl',              category:'biceps', equipment:'freeweight', icon:'dumbbell', baseline:10, increment:2.5, unit:'lb', targetSets:4, targetReps:'12–15' },
+  { id:'ezbarcurl',      name:'EZ-Bar Curl',               category:'biceps', equipment:'freeweight', icon:'barbell', baseline:20, increment:2.5, unit:'lb', targetSets:4, targetReps:'12–15' },
+
+  // ================= TRICEPS =================
+  { id:'tricepspushdown', name:'Cable Triceps Pushdown',   category:'triceps', equipment:'machine', icon:'pulley', baseline:15, increment:5, unit:'lb', targetSets:3, targetReps:12 },
+  { id:'skullcrusher',    name:'Skull Crusher',            category:'triceps', equipment:'freeweight', icon:'barbell', baseline:20, increment:2.5, unit:'lb', targetSets:4, targetReps:'12–15' },
+  { id:'closegripbench',  name:'Close-Grip Bench Press',   category:'triceps', equipment:'freeweight', icon:'barbell', baseline:45, increment:5, unit:'lb', targetSets:4, targetReps:'12–15' },
+  { id:'overheadtricepext', name:'Overhead Tricep Extension', category:'triceps', equipment:'freeweight', icon:'dumbbell', baseline:10, increment:2.5, unit:'lb', targetSets:4, targetReps:'12–15' },
+  { id:'speediancetricepext', name:'Speediance Tricep Extension', category:'triceps', equipment:'speediance', icon:'speediance', baseline:10, increment:2.5, unit:'lb', targetSets:4, targetReps:'12–15' },
+  { id:'tricepkickback',  name:'Tricep Kickback',          category:'triceps', equipment:'freeweight', icon:'dumbbell', baseline:5, increment:2.5, unit:'lb', targetSets:4, targetReps:'12–15' },
+  { id:'tricepdip',       name:'Tricep Dip',               category:'triceps', equipment:'bodyweight', icon:'dipbars', baseline:10, increment:2, unit:'reps', targetSets:4, targetReps:'12–15' },
+  { id:'ropepushdown',    name:'Rope Pushdown',            category:'triceps', equipment:'machine', icon:'pulley', baseline:15, increment:2.5, unit:'lb', targetSets:4, targetReps:'12–15' },
+  { id:'speedianceTricepkickback', name:'Speediance Tricep Kickback', category:'triceps', equipment:'speediance', icon:'speediance', baseline:10, increment:2.5, unit:'lb', targetSets:4, targetReps:'12–15' },
+
+  // ================= CORE / ABS =================
+  { id:'plank',          name:'Plank Hold',                category:'core', equipment:'bodyweight', icon:'core', baseline:20, increment:10, unit:'seconds', targetSets:3, targetReps:10 },
+  { id:'russiantwist',   name:'Russian Twist',             category:'core', equipment:'bodyweight', icon:'medball', baseline:12, increment:2, unit:'reps', targetSets:4, targetReps:'12–15' },
+  { id:'hanginglegraise', name:'Hanging Leg Raise',        category:'core', equipment:'bodyweight', icon:'pullupbar', baseline:10, increment:2, unit:'reps', targetSets:4, targetReps:'12–15' },
+  { id:'cablewoodchopper', name:'Cable Woodchopper',       category:'core', equipment:'machine', icon:'pulley', baseline:15, increment:2.5, unit:'lb', targetSets:4, targetReps:'12–15' },
+  { id:'speediancewoodchopper', name:'Speediance Woodchopper', category:'core', equipment:'speediance', icon:'speediance', baseline:15, increment:2.5, unit:'lb', targetSets:4, targetReps:'12–15' },
+  { id:'abwheel',        name:'Ab Wheel Rollout',          category:'core', equipment:'bodyweight', icon:'core', baseline:8, increment:2, unit:'reps', targetSets:4, targetReps:'12–15' },
+  { id:'bicyclecrunch',  name:'Bicycle Crunch',            category:'core', equipment:'bodyweight', icon:'core', baseline:15, increment:2, unit:'reps', targetSets:4, targetReps:'12–15' },
+  { id:'sideplank',      name:'Side Plank',                category:'core', equipment:'bodyweight', icon:'core', baseline:20, increment:10, unit:'seconds', targetSets:4, targetReps:'12–15' },
+  { id:'vup',            name:'V-Up',                      category:'core', equipment:'bodyweight', icon:'core', baseline:12, increment:2, unit:'reps', targetSets:4, targetReps:'12–15' },
+  { id:'cablecrunch',    name:'Cable Crunch',              category:'core', equipment:'machine', icon:'pulley', baseline:30, increment:5, unit:'lb', targetSets:4, targetReps:'12–15' },
+  { id:'deadbug',        name:'Dead Bug',                  category:'core', equipment:'bodyweight', icon:'core', baseline:10, increment:2, unit:'reps', targetSets:4, targetReps:'12–15' },
+
+  // ================= FULL BODY =================
+  { id:'squattopress',   name:'Speediance Squat-to-Press',  category:'fullbody', equipment:'speediance', icon:'speediance', baseline:15, increment:2.5, unit:'lb', targetSets:4, targetReps:'40s', repsAreTime:true },
+  { id:'renegaderow',    name:'Dumbbell Renegade Row',      category:'fullbody', equipment:'freeweight', icon:'dumbbell', baseline:10, increment:2.5, unit:'lb', targetSets:4, targetReps:'40s', repsAreTime:true },
+  { id:'lunge',          name:'Speediance Cable Lunge / Walking Lunge', category:'fullbody', equipment:'speediance', icon:'speediance', baseline:10, increment:2.5, unit:'lb', targetSets:3, targetReps:'12/leg' },
+  { id:'cleanandpress',  name:'Clean and Press',            category:'fullbody', equipment:'freeweight', icon:'barbell', baseline:45, increment:5, unit:'lb', targetSets:4, targetReps:'12–15' },
+  { id:'thruster',       name:'Dumbbell Thruster',          category:'fullbody', equipment:'freeweight', icon:'dumbbell', baseline:15, increment:2.5, unit:'lb', targetSets:4, targetReps:'12–15' },
+  { id:'manmaker',       name:'Man Maker',                  category:'fullbody', equipment:'freeweight', icon:'dumbbell', baseline:10, increment:2.5, unit:'lb', targetSets:4, targetReps:'12–15' },
+  { id:'speedthruster',  name:'Speediance Thruster',         category:'fullbody', equipment:'speediance', icon:'speediance', baseline:15, increment:2.5, unit:'lb', targetSets:4, targetReps:'12–15' },
+  { id:'turkishgetup',   name:'Turkish Get-Up',              category:'fullbody', equipment:'freeweight', icon:'kettlebell', baseline:15, increment:2.5, unit:'lb', targetSets:4, targetReps:'12–15' },
+  { id:'wallball',       name:'Wall Ball',                   category:'fullbody', equipment:'freeweight', icon:'medball', baseline:10, increment:2.5, unit:'lb', targetSets:4, targetReps:'12–15' },
+  { id:'devilspress',    name:'Devil\'s Press',              category:'fullbody', equipment:'freeweight', icon:'dumbbell', baseline:10, increment:2.5, unit:'lb', targetSets:4, targetReps:'12–15' },
+  { id:'bearcrawl',      name:'Bear Crawl',                  category:'fullbody', equipment:'bodyweight', icon:'fullbody', baseline:30, increment:10, unit:'seconds', targetSets:4, targetReps:'12–15' },
+  { id:'burpee',         name:'Burpee',                      category:'fullbody', equipment:'bodyweight', icon:'fullbody', baseline:10, increment:2, unit:'reps', targetSets:4, targetReps:'12–15' },
+  { id:'plateoverhead',  name:'Plate Ground-to-Overhead',    category:'fullbody', equipment:'freeweight', icon:'plate', baseline:15, increment:2.5, unit:'lb', targetSets:4, targetReps:'12–15' },
+
+  // ================= CONDITIONING / CARDIO =================
+  { id:'kbswing',        name:'Kettlebell / Dumbbell Swing', category:'conditioning', equipment:'freeweight', icon:'kettlebell', baseline:15, increment:2.5, unit:'lb', targetSets:4, targetReps:'40s', repsAreTime:true },
+  { id:'mtnclimbers',    name:'Mountain Climbers',           category:'conditioning', equipment:'bodyweight', icon:'fullbody', baseline:0, increment:0, unit:'reps', targetSets:4, targetReps:'40s', repsAreTime:true },
+  { id:'jumprope',       name:'Jump Rope',                   category:'conditioning', equipment:'bodyweight', icon:'jumprope', baseline:60, increment:15, unit:'seconds', targetSets:4, targetReps:'12–15' },
+  { id:'rowmachinecal',  name:'Rowing Machine Interval',     category:'conditioning', equipment:'machine', icon:'rowmachine', baseline:60, increment:15, unit:'seconds', targetSets:4, targetReps:'30s', repsAreTime:true },
+  { id:'assaultbike',    name:'Assault Bike Sprint',         category:'conditioning', equipment:'machine', icon:'bike', baseline:30, increment:10, unit:'seconds', targetSets:4, targetReps:'30s', repsAreTime:true },
+  { id:'treadmillsprint',name:'Treadmill Sprint',            category:'conditioning', equipment:'machine', icon:'treadmill', baseline:30, increment:10, unit:'seconds', targetSets:4, targetReps:'30s', repsAreTime:true },
+  { id:'battleropes',    name:'Battle Ropes',                category:'conditioning', equipment:'machine', icon:'ropes', baseline:30, increment:10, unit:'seconds', targetSets:4, targetReps:'30s', repsAreTime:true },
+  { id:'boxjump',        name:'Box Jump',                    category:'conditioning', equipment:'bodyweight', icon:'boxjump', baseline:10, increment:2, unit:'reps', targetSets:4, targetReps:'12–15' },
+  { id:'sledpush',       name:'Sled Push',                   category:'conditioning', equipment:'machine', icon:'rack', baseline:30, increment:10, unit:'seconds', targetSets:4, targetReps:'30s', repsAreTime:true },
+  { id:'highknees',      name:'High Knees',                  category:'conditioning', equipment:'bodyweight', icon:'stopwatch', baseline:30, increment:10, unit:'seconds', targetSets:4, targetReps:'30s', repsAreTime:true },
+  { id:'jumpingjacks',   name:'Jumping Jacks',               category:'conditioning', equipment:'bodyweight', icon:'stopwatch', baseline:30, increment:10, unit:'seconds', targetSets:4, targetReps:'30s', repsAreTime:true },
+  { id:'speedianceconditioning', name:'Speediance Conditioning Circuit', category:'conditioning', equipment:'speediance', icon:'speediance', baseline:30, increment:10, unit:'seconds', targetSets:4, targetReps:'30s', repsAreTime:true }
 ];
 
 /* ---------------- Workout split — the 4-day program ---------------- */
 const WORKOUT_DAYS = [
   {
-    id:'push', dayNum:1, title:'Push', subtitle:'Chest, Shoulders, Triceps', duration:'60 min', badge:'Non-activity day', category:'upper-compound',
+    id:'push', dayNum:1, title:'Push', subtitle:'Chest, Shoulders, Triceps', duration:'60 min', badge:'Non-activity day', category:'chest',
     warmup:{ duration:'5 min', description:'Arm circles, band pull-aparts, light ramp-up sets' },
     lifts:['chestpress_speed','dbshoulder','cablefly_speed','inclinedbpress','lateralraise','tricepspushdown'],
     finisher:{ title:'Finisher', duration:'15 min', description:'Fast-paced circuit — push-ups, jump squats, mountain climbers (40s work / 20s rest)' }
   },
   {
-    id:'pull', dayNum:2, title:'Pull', subtitle:'Back, Biceps', duration:'60 min', badge:null, category:'upper-accessory',
+    id:'pull', dayNum:2, title:'Pull', subtitle:'Back, Biceps', duration:'60 min', badge:null, category:'back',
     warmup:{ duration:'5 min', description:'General warm-up' },
     lifts:['latpull','seatedrow_speed','dbbentrow','facepull','curl','hammercurl'],
     finisher:{ title:'Finisher', duration:'15 min', description:'Kettlebell/dumbbell swings, jump rope, or mountain climbers' }
   },
   {
-    id:'legs', dayNum:3, title:'Legs', subtitle:'Quads, Hamstrings, Glutes, Calves', duration:'60 min', badge:null, category:'lower-compound',
+    id:'legs', dayNum:3, title:'Legs', subtitle:'Quads, Hamstrings, Glutes, Calves', duration:'60 min', badge:null, category:'legs-compound',
     warmup:{ duration:'5 min', description:'Bodyweight squats, leg swings' },
     lifts:['gobletsquat','dbrdl','lunge','calfraise'],
     finisher:{ title:'Finisher', duration:'15 min', description:'Incline walk, bike, or jump rope' }
@@ -567,65 +803,46 @@ const ACTIVITY_TYPES = [
   { id:'othersport',  title:'Other Sport', subtitle:'Tennis, soccer, swimming, hiking…', category:'activity', custom:true }
 ];
 
-/* ---------------- Exercise type icons (visual cue for workout type) ---------------- */
-// Category -> { label, svg } — a simple line-icon glyph so you can tell at a glance
-// what kind of movement/muscle group an exercise trains.
-const CATEGORY_ICONS = {
-  'lower-compound': {
-    label: 'Legs',
-    svg: `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M9 3h6"/><path d="M10 3v5l-3 13"/><path d="M14 3v5l3 13"/><path d="M9 12h6"/></svg>`
-  },
-  'upper-compound': {
-    label: 'Push / Press',
-    svg: `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M3 9h18"/><path d="M6 6v6M18 6v6"/><rect x="8" y="14" width="8" height="3" rx="1"/><path d="M9 17v3M15 17v3"/></svg>`
-  },
-  'upper-accessory': {
-    label: 'Pull / Back',
-    svg: `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M12 3v7"/><path d="M9 6l3-3 3 3"/><path d="M7 21l5-8 5 8"/></svg>`
-  },
-  'accessory': {
-    label: 'Arms / Shoulders',
-    svg: `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M6 9v6M18 9v6"/><rect x="4" y="8" width="3" height="8" rx="1"/><rect x="17" y="8" width="3" height="8" rx="1"/><path d="M7 12h10"/></svg>`
-  },
-  'bodyweight': {
-    label: 'Bodyweight',
-    svg: `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="4.5" r="2"/><path d="M12 7v6M12 9l-5 3M12 9l5 3M12 13l-4 7M12 13l4 7"/></svg>`
-  },
-  'fullbody': {
-    label: 'Full Body',
-    svg: `<svg viewBox="0 0 24 24" fill="currentColor" stroke="none"><path d="M13 2 3 14h7l-1 8 11-14h-8l1-6z"/></svg>`
-  },
-  'conditioning': {
-    label: 'Conditioning',
-    svg: `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M3 12h4l2-7 4 14 2-7h6"/></svg>`
-  },
-  'activity': {
-    label: 'Activity',
-    svg: `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="9"/><path d="M12 3v18M3 12h18M5.7 5.7c2.8 3.5 2.8 9.1 0 12.6M18.3 5.7c-2.8 3.5-2.8 9.1 0 12.6"/></svg>`
-  }
+// --- One-time migration: exercises saved under the old 7-category taxonomy get
+// remapped to the new one so existing local data keeps working after this upgrade.
+const LEGACY_CATEGORY_MAP = {
+  'lower-compound':'legs-compound', 'upper-compound':'chest', 'upper-accessory':'back',
+  'accessory':'shoulders', 'bodyweight':'core', 'fullbody':'fullbody', 'conditioning':'conditioning', 'activity':'activity'
 };
-function categoryIcon(cat){ return CATEGORY_ICONS[cat] || CATEGORY_ICONS['accessory']; }
-function iconBadge(ex, size){
-  const info = categoryIcon(ex.category);
-  const cls = 'ex-icon cat-' + ex.category + (size==='sm' ? ' sm' : '');
-  return `<div class="${cls}" title="${info.label}">${info.svg}</div>`;
-}
-function prescriptionLabel(ex){
-  if(ex.repsAreTime) return `${ex.targetSets||4} rounds × ${ex.targetReps} work`;
-  if(ex.unit === 'seconds') return `${ex.targetSets||3} sets × hold`;
-  return `${ex.targetSets||3} sets × ${ex.targetReps||10} reps`;
-}
-// Best-guess numeric reps to pre-fill a set row with. Returns '' when the
-// exercise is a timed circuit move (e.g. "40s work") where a rep count doesn't apply.
-function defaultRepsValue(ex){
-  if(!ex) return 10;
-  if(ex.repsAreTime) return '';
-  const n = parseInt(String(ex.targetReps), 10);
-  return isNaN(n) ? 10 : n;
+const EXERCISE_SCHEMA_VERSION = 2;
+function migrateExercises(list){
+  const defaultsById = {}; DEFAULT_EXERCISES.forEach(d=> defaultsById[d.id]=d);
+  const migrated = list.map(ex=>{
+    const canonical = defaultsById[ex.id];
+    if(canonical){
+      // Known exercise: keep the user's own numbers, adopt the new taxonomy fields.
+      return Object.assign({}, canonical, {
+        baseline: ex.baseline, increment: ex.increment, targetSets: ex.targetSets,
+        targetReps: ex.targetReps, repsAreTime: ex.repsAreTime
+      });
+    }
+    // Unknown (user-added) exercise: best-effort remap of its old category string.
+    if(!categoryDef(ex.category)){
+      const mapped = LEGACY_CATEGORY_MAP[ex.category] || 'fullbody';
+      return Object.assign({}, ex, { category: mapped, equipment: ex.equipment || (ex.unit==='lb' ? 'freeweight' : 'bodyweight') });
+    }
+    return ex;
+  });
+  const knownIds = new Set(migrated.map(e=>e.id));
+  DEFAULT_EXERCISES.forEach(d=>{ if(!knownIds.has(d.id)) migrated.push(JSON.parse(JSON.stringify(d))); });
+  return migrated;
 }
 
 let profile = loadJSON(LS_KEYS.profile, DEFAULT_PROFILE);
 let exercises = loadJSON(LS_KEYS.exercises, DEFAULT_EXERCISES);
+{
+  const storedSchemaVersion = parseInt(localStorage.getItem('ironlog_exschema')||'1', 10);
+  if(storedSchemaVersion < EXERCISE_SCHEMA_VERSION){
+    exercises = migrateExercises(exercises);
+    localStorage.setItem('ironlog_exschema', String(EXERCISE_SCHEMA_VERSION));
+    save(LS_KEYS.exercises, exercises);
+  }
+}
 let logs = loadJSON(LS_KEYS.logs, []);
 let activityLogs = loadJSON(LS_KEYS.activityLogs, []); // non-lifting "I was active" entries: {id,date,activityId,label,hours,notes}
 let selectedExerciseId = exercises.length ? exercises[0].id : null;
@@ -1254,28 +1471,35 @@ function saveActivityLog(){
 
 /* ---------------- Log Workout ---------------- */
 
+// Groups the exercise library by category (in CATEGORIES order) for any picker list.
+function exercisesByCategory(list){
+  const groups = CATEGORIES.map(c=>({ def:c, items: list.filter(ex=>ex.category===c.id) })).filter(g=>g.items.length);
+  return groups;
+}
 function renderExerciseList(){
   const box = document.getElementById('exerciseList');
-  box.innerHTML = '';
-  exercises.forEach(ex=>{
-    const div = document.createElement('div');
-    div.className = 'exercise-card' + (ex.id===selectedExerciseId ? ' selected' : '');
-    div.innerHTML = `${iconBadge(ex)}<div><div class="name">${ex.name}</div><div class="meta">${categoryLabel(ex.category)} · baseline ${fmtWeight(ex, ex.baseline)}</div><div class="presc">${prescriptionLabel(ex)}</div></div>`;
-    div.onclick = ()=>{ selectedExerciseId = ex.id; renderLogView(); };
-    box.appendChild(div);
-  });
-
-  const legend = document.getElementById('iconLegend');
-  if(legend){
-    legend.innerHTML = Object.keys(CATEGORY_ICONS).map(cat=>{
-      const info = CATEGORY_ICONS[cat];
-      return `<div class="item"><div class="ex-icon sm cat-${cat}">${info.svg}</div>${info.label}</div>`;
-    }).join('');
+  const filterSel = document.getElementById('logExerciseFilter');
+  if(filterSel && !filterSel.dataset.built){
+    filterSel.innerHTML = '<option value="">All categories</option>' + CATEGORIES.map(c=>`<option value="${c.id}">${c.label}</option>`).join('');
+    filterSel.dataset.built = '1';
   }
+  const filterCat = filterSel ? filterSel.value : '';
+  const list = exercises.filter(ex=> !filterCat || ex.category===filterCat);
+  const groups = exercisesByCategory(list);
+  box.innerHTML = groups.map(g=>{
+    const cards = g.items.map(ex=>{
+      const selected = ex.id===selectedExerciseId;
+      return `<div class="exercise-card${selected?' selected':''}" onclick="selectExerciseForLog('${ex.id}')">
+        ${iconBadge(ex)}
+        <div><div class="name">${ex.name}<span class="equip-tag">${equipmentLabel(ex.equipment)}</span></div>
+        <div class="meta">baseline ${fmtWeight(ex, ex.baseline)}</div>
+        <div class="presc">${prescriptionWithTime(ex)}</div></div>
+      </div>`;
+    }).join('');
+    return `<div class="category-group-heading" style="color:${g.def.color}"><span class="category-dot" style="background:${g.def.color}"></span>${g.def.label}</div>${cards}`;
+  }).join('') || '<div class="empty">No exercises in this category yet.</div>';
 }
-function categoryLabel(c){
-  return {'lower-compound':'Lower · Compound','upper-compound':'Upper · Compound','upper-accessory':'Upper · Accessory','accessory':'Accessory','bodyweight':'Bodyweight','fullbody':'Full Body','conditioning':'Conditioning','activity':'Activity'}[c] || c;
-}
+function selectExerciseForLog(id){ selectedExerciseId = id; renderLogView(); }
 
 function renderLogView(){
   renderExerciseList();
@@ -1319,27 +1543,6 @@ function renumberSets(){
   document.querySelectorAll('#setsContainer .set-row').forEach((row,i)=>{
     row.querySelector('.idx').textContent = '#'+(i+1);
   });
-}
-
-function addCustomExercise(){
-  const name = document.getElementById('newExName').value.trim();
-  const category = document.getElementById('newExCategory').value;
-  const baseline = parseFloat(document.getElementById('newExBaseline').value) || 0;
-  const increment = parseFloat(document.getElementById('newExIncrement').value) || 0;
-  const targetSets = parseInt(document.getElementById('newExSets').value,10) || 3;
-  const targetReps = parseInt(document.getElementById('newExReps').value,10) || 10;
-  if(!name){ showToast('Enter an exercise name'); return; }
-  const unit = category==='bodyweight' ? 'reps' : 'lb';
-  const ex = { id: uid(), name, category, baseline, increment, unit, targetSets, targetReps };
-  exercises.push(ex);
-  saveAll();
-  selectedExerciseId = ex.id;
-  document.getElementById('newExName').value='';
-  document.getElementById('newExBaseline').value='';
-  document.getElementById('newExSets').value='3';
-  document.getElementById('newExReps').value='10';
-  renderLogView();
-  showToast('Exercise added');
 }
 
 function saveWorkoutLog(){
@@ -1517,8 +1720,8 @@ function calendarNextMonth(){ calendarViewDate.setMonth(calendarViewDate.getMont
 function dayColorForId(dayId){
   const day = WORKOUT_DAYS.find(d=>d.id===dayId);
   if(!day) return 'var(--text-dim)';
-  const map = { 'upper-compound':'var(--blue)', 'upper-accessory':'var(--purple)', 'lower-compound':'var(--accent)', 'fullbody':'#ff8a5c' };
-  return map[day.category] || 'var(--accent2)';
+  const def = categoryDef(day.category);
+  return def ? def.color : 'var(--accent2)';
 }
 
 function renderCalendar(){
@@ -1730,44 +1933,176 @@ function renderSettings(){
   document.getElementById('profWeight').value = profile.weight;
   document.getElementById('profBuild').value = profile.build;
   document.getElementById('profStartDate').value = profile.startDate;
+  buildSettingsFilterSelectsOnce();
+  renderSettingsExerciseList();
+}
 
+function buildSettingsFilterSelectsOnce(){
+  const catSel = document.getElementById('settingsCategoryFilter');
+  if(catSel && !catSel.dataset.built){
+    catSel.innerHTML = '<option value="">All categories</option>' + CATEGORIES.map(c=>`<option value="${c.id}">${c.label}</option>`).join('');
+    catSel.dataset.built = '1';
+  }
+  const eqSel = document.getElementById('settingsEquipmentFilter');
+  if(eqSel && !eqSel.dataset.built){
+    eqSel.innerHTML = '<option value="">All equipment</option>' + EQUIPMENT_TYPES.map(e=>`<option value="${e.id}">${e.label}</option>`).join('');
+    eqSel.dataset.built = '1';
+  }
+}
+
+let openIconPickerId = null; // which exercise row currently has its "change icon" picker expanded
+
+function renderSettingsExerciseList(){
   const box = document.getElementById('settingsExerciseList');
-  box.innerHTML = exercises.map(ex=>`
-    <div class="exercise-card" style="cursor:default;align-items:flex-start;">
-      ${iconBadge(ex)}
-      <div style="flex:1;">
-        <div class="flex-between">
-          <div>
-            <div class="name">${ex.name}</div>
-            <div class="meta">${categoryLabel(ex.category)}</div>
-          </div>
-          <button class="icon-btn" onclick="deleteExercise('${ex.id}')">🗑</button>
+  if(!box) return;
+  const catFilter = document.getElementById('settingsCategoryFilter').value;
+  const eqFilter = document.getElementById('settingsEquipmentFilter').value;
+  const list = exercises.filter(ex => (!catFilter || ex.category===catFilter) && (!eqFilter || ex.equipment===eqFilter));
+  const groups = exercisesByCategory(list);
+  box.innerHTML = groups.map(g=>{
+    const rows = g.items.map(renderSettingsExerciseRow).join('');
+    return `<div class="category-group-heading" style="color:${g.def.color}"><span class="category-dot" style="background:${g.def.color}"></span>${g.def.label} <span style="color:var(--text-dim);font-weight:600;">(${g.items.length})</span></div>${rows}`;
+  }).join('') || '<div class="empty">No exercises match these filters.</div>';
+}
+
+function renderSettingsExerciseRow(ex){
+  const pickerOpen = openIconPickerId === ex.id;
+  const iconGrid = pickerOpen ? `<div class="icon-picker">${PICKABLE_ICON_KEYS.map(k=>
+    `<div class="icon-choice${ex.icon===k?' selected':''}" onclick="setExerciseIcon('${ex.id}','${k}')" title="${ICON_LIBRARY[k].label}">${ICON_LIBRARY[k].svg}</div>`
+  ).join('')}</div>` : '';
+  return `<div class="exercise-card" style="cursor:default;align-items:flex-start;flex-wrap:wrap;">
+    <div onclick="toggleRowIconPicker('${ex.id}')" style="cursor:pointer;">${iconBadge(ex)}</div>
+    <div style="flex:1;min-width:220px;">
+      <div class="flex-between">
+        <div>
+          <div class="name">${ex.name}<span class="equip-tag">${equipmentLabel(ex.equipment)}</span></div>
+          <div class="meta">${prescriptionWithTime(ex)}</div>
         </div>
-        <div class="row" style="margin-top:8px;">
-          <input type="number" value="${ex.baseline}" onchange="updateExercise('${ex.id}','baseline',this.value)" placeholder="Baseline">
-          <input type="number" value="${ex.increment}" step="0.5" onchange="updateExercise('${ex.id}','increment',this.value)" placeholder="Climb / 2wk">
-        </div>
-        <div class="row" style="margin-top:8px;">
-          <input type="number" value="${ex.targetSets||3}" onchange="updateExercise('${ex.id}','targetSets',this.value)" placeholder="Target sets">
-          <input type="number" value="${ex.targetReps||10}" onchange="updateExercise('${ex.id}','targetReps',this.value)" placeholder="Target reps">
-        </div>
+        <button class="icon-btn" onclick="deleteExercise('${ex.id}')">🗑</button>
+      </div>
+      ${iconGrid}
+      <div class="row" style="margin-top:8px;">
+        <select onchange="updateExerciseField('${ex.id}','category',this.value)">
+          ${CATEGORIES.map(c=>`<option value="${c.id}"${c.id===ex.category?' selected':''}>${c.label}</option>`).join('')}
+        </select>
+        <select onchange="updateExerciseField('${ex.id}','equipment',this.value)">
+          ${EQUIPMENT_TYPES.map(e=>`<option value="${e.id}"${e.id===ex.equipment?' selected':''}>${e.label}</option>`).join('')}
+        </select>
+      </div>
+      <div class="row" style="margin-top:8px;">
+        <input type="number" value="${ex.baseline}" onchange="updateExerciseField('${ex.id}','baseline',this.value)" placeholder="Baseline">
+        <input type="number" value="${ex.increment}" step="0.5" onchange="updateExerciseField('${ex.id}','increment',this.value)" placeholder="Climb / 2wk">
+      </div>
+      <div class="row" style="margin-top:8px;">
+        <input type="number" value="${ex.targetSets||4}" onchange="updateExerciseField('${ex.id}','targetSets',this.value)" placeholder="Target sets">
+        <input type="text" value="${ex.targetReps!=null?ex.targetReps:''}" onchange="updateExerciseField('${ex.id}','targetReps',this.value)" placeholder="Target reps (e.g. 12–15)">
       </div>
     </div>
-  `).join('');
+  </div>`;
 }
-function updateExercise(id, field, value){
+function toggleRowIconPicker(id){
+  openIconPickerId = (openIconPickerId===id) ? null : id;
+  renderSettingsExerciseList();
+}
+function setExerciseIcon(id, iconKey){
   const ex = exercises.find(e=>e.id===id);
   if(!ex) return;
-  ex[field] = parseFloat(value)||0;
+  ex.icon = iconKey;
   saveAll();
+  openIconPickerId = null;
+  renderSettingsExerciseList();
+  renderExerciseList();
+  showToast('Icon updated');
+}
+function updateExerciseField(id, field, value){
+  const ex = exercises.find(e=>e.id===id);
+  if(!ex) return;
+  if(field==='category' || field==='equipment' || field==='targetReps'){
+    ex[field] = value; // kept as a string — category/equipment ids, or a rep range like "12–15"
+  } else {
+    ex[field] = parseFloat(value) || 0;
+  }
+  saveAll();
+  renderSettingsExerciseList();
+  renderExerciseList();
+  renderDashboard();
   showToast('Updated');
 }
 function deleteExercise(id){
   if(!confirm('Delete this exercise? Logged history for it will remain but be unlinked.')) return;
   exercises = exercises.filter(e=>e.id!==id);
   saveAll();
-  renderSettings();
+  renderSettingsExerciseList();
+  renderExerciseList();
   if(selectedExerciseId===id) selectedExerciseId = exercises[0] ? exercises[0].id : null;
+}
+
+/* ---- Add-new-exercise builder (name, 30-icon picker, category, equipment, prescription) ---- */
+let builderIconSelected = null;
+
+function toggleExerciseBuilder(){
+  const box = document.getElementById('exerciseBuilder');
+  const btn = document.getElementById('builderToggleBtn');
+  const opening = box.style.display === 'none';
+  box.style.display = opening ? 'block' : 'none';
+  btn.textContent = opening ? 'Cancel' : '+ Add Exercise';
+  if(opening) renderExerciseBuilder();
+}
+function renderExerciseBuilder(){
+  builderIconSelected = null;
+  const box = document.getElementById('exerciseBuilder');
+  box.innerHTML = `
+    <label>Exercise name</label>
+    <input type="text" id="builderName" placeholder="e.g. Cable Woodchopper">
+    <label>What's it for?</label>
+    <select id="builderCategory">${CATEGORIES.map(c=>`<option value="${c.id}">${c.label}</option>`).join('')}</select>
+    <label>Equipment</label>
+    <select id="builderEquipment">${EQUIPMENT_TYPES.map(e=>`<option value="${e.id}">${e.label}</option>`).join('')}</select>
+    <label>How do you track it?</label>
+    <select id="builderUnit">
+      <option value="lb">Weight (lb)</option>
+      <option value="reps">Reps only (bodyweight)</option>
+      <option value="seconds">Timed hold (seconds)</option>
+    </select>
+    <label>Icon — pick one of 30</label>
+    <div class="icon-picker" id="builderIconPicker">${PICKABLE_ICON_KEYS.map(k=>
+      `<div class="icon-choice" onclick="selectBuilderIcon('${k}')" data-key="${k}" title="${ICON_LIBRARY[k].label}">${ICON_LIBRARY[k].svg}</div>`
+    ).join('')}</div>
+    <div class="row" style="margin-top:12px;">
+      <div><label>Baseline</label><input type="number" id="builderBaseline" placeholder="e.g. 20"></div>
+      <div><label>Climb per overload</label><input type="number" id="builderIncrement" value="2.5"></div>
+    </div>
+    <div class="row" style="margin-top:8px;">
+      <div><label>Target sets</label><input type="number" id="builderSets" value="4"></div>
+      <div><label>Target reps</label><input type="text" id="builderReps" value="12–15"></div>
+    </div>
+    <button class="btn" style="width:100%;margin-top:14px;" onclick="saveNewExercise()">Save Exercise</button>
+  `;
+}
+function selectBuilderIcon(key){
+  builderIconSelected = key;
+  document.querySelectorAll('#builderIconPicker .icon-choice').forEach(el=>{
+    el.classList.toggle('selected', el.dataset.key===key);
+  });
+}
+function saveNewExercise(){
+  const name = document.getElementById('builderName').value.trim();
+  if(!name){ showToast('Enter an exercise name'); return; }
+  const category = document.getElementById('builderCategory').value;
+  const equipment = document.getElementById('builderEquipment').value;
+  const unit = document.getElementById('builderUnit').value;
+  const baseline = parseFloat(document.getElementById('builderBaseline').value) || 0;
+  const increment = parseFloat(document.getElementById('builderIncrement').value) || 0;
+  const targetSets = parseInt(document.getElementById('builderSets').value,10) || 4;
+  const targetReps = document.getElementById('builderReps').value.trim() || '12–15';
+  const ex = { id: uid(), name, category, equipment, unit, icon: builderIconSelected, baseline, increment, targetSets, targetReps };
+  exercises.push(ex);
+  saveAll();
+  selectedExerciseId = ex.id;
+  toggleExerciseBuilder();
+  renderSettingsExerciseList();
+  renderExerciseList();
+  showToast('Exercise added ✓');
 }
 function saveProfile(){
   profile.height = document.getElementById('profHeight').value;
