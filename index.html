@@ -194,13 +194,27 @@
   .day-card .day-badge{display:inline-block;margin-top:2px;font-size:10.5px;font-weight:700;color:var(--accent);}
 
   /* Guided workout wizard */
-  .progress-track{background:var(--bg-alt);border-radius:99px;height:6px;overflow:hidden;margin-bottom:8px;}
-  .progress-fill{background:linear-gradient(90deg,var(--accent),var(--accent-dim));height:100%;border-radius:99px;transition:width .25s ease;}
-  .progress-label{font-size:11.5px;color:var(--text-dim);margin-bottom:14px;}
+  .progress-track{display:flex;gap:3px;margin-bottom:8px;}
+  .progress-seg{flex:1;height:8px;border-radius:4px;transition:opacity .25s ease,transform .2s ease;}
+  .progress-seg.current{transform:scaleY(1.35);}
+  .progress-label{font-size:11.5px;color:var(--text-dim);margin-bottom:14px;display:flex;align-items:center;gap:6px;flex-wrap:wrap;}
+  .progress-pct{font-size:14px;font-weight:800;color:var(--text);}
+  .wizard-top-row{display:flex;align-items:flex-start;gap:12px;flex-wrap:wrap;margin-bottom:14px;}
+  .wizard-top-row > *{flex:1 1 260px;margin-top:0 !important;}
   .wizard-actions{display:flex;gap:10px;flex-wrap:wrap;margin-top:16px;}
   .wizard-actions .btn{flex:1 1 auto;}
   .check-row{display:flex;align-items:center;gap:8px;font-size:12.5px;color:var(--text-dim);font-weight:600;margin-top:14px;cursor:pointer;}
   .check-row input[type=checkbox]{width:auto;margin:0;accent-color:var(--accent);}
+
+  /* Movement animation preview — simple looping stick-figure illustration, not a real GIF */
+  .movement-preview{
+    background:var(--bg-alt);border:1px solid var(--border);border-radius:12px;
+    padding:12px;margin-top:14px;display:flex;align-items:center;gap:14px;
+  }
+  .movement-preview .mp-figure{width:76px;height:76px;flex:0 0 auto;color:var(--text);}
+  .movement-preview .mp-figure svg{width:100%;height:100%;overflow:visible;}
+  .movement-preview .mp-label{font-size:11.5px;color:var(--text-dim);}
+  .movement-preview .mp-label strong{display:block;color:var(--text);font-size:13px;margin-bottom:2px;}
 
   /* Calendar */
   .calendar-dow{display:grid;grid-template-columns:repeat(7,1fr);gap:6px;margin-top:14px;font-size:10.5px;color:var(--text-dim);text-align:center;font-weight:700;text-transform:uppercase;letter-spacing:.03em;}
@@ -220,18 +234,24 @@
   .cal-dot{width:7px;height:7px;border-radius:50%;flex:0 0 auto;}
   @media (max-width:600px){.cal-cell{font-size:9.5px;padding:4px;} .cal-dot{width:5px;height:5px;}}
 
-  /* Rest timer (embedded in the workout wizard, between sets) */
-  .timer-wrap{display:flex;flex-direction:column;align-items:center;gap:12px;}
-  .timer-ring{position:relative;width:130px;height:130px;}
+  /* Rest timer (embedded in the workout wizard, between sets) — condensed, horizontal layout:
+     presets + custom seconds on the left, ring + start/reset stacked on the right. */
+  .timer-wrap{display:flex;flex-direction:row;align-items:center;justify-content:space-between;gap:10px;}
+  .timer-left{display:flex;flex-direction:column;gap:6px;flex:1 1 auto;min-width:0;}
+  .timer-right{display:flex;flex-direction:column;align-items:center;gap:6px;flex:0 0 auto;}
+  .timer-ring{position:relative;width:60px;height:60px;}
   .timer-ring svg{transform:rotate(-90deg);}
   .timer-ring .time{
     position:absolute;inset:0;display:flex;align-items:center;justify-content:center;
-    font-size:22px;font-weight:800;
+    font-size:11.5px;font-weight:800;
   }
-  .presets{display:flex;gap:6px;flex-wrap:wrap;justify-content:center;}
-  .presets button{min-width:48px;padding:7px 10px;font-size:12px;}
-  .rest-timer-box{background:var(--bg-alt);border:1px solid var(--border);border-radius:12px;padding:14px;margin-top:14px;}
-  .rest-timer-box .hdr{font-size:11.5px;font-weight:700;color:var(--text-dim);text-transform:uppercase;letter-spacing:.03em;margin-bottom:10px;text-align:center;}
+  .presets{display:flex;gap:4px;flex-wrap:wrap;}
+  .presets button{min-width:34px;padding:4px 6px;font-size:10px;}
+  .rest-timer-box{background:var(--bg-alt);border:1px solid var(--border);border-radius:12px;padding:10px;margin-top:14px;}
+  .rest-timer-box .hdr{font-size:10.5px;font-weight:700;color:var(--text-dim);text-transform:uppercase;letter-spacing:.03em;margin-bottom:7px;text-align:center;}
+  .rest-timer-box .timer-wrap .row{max-width:150px;gap:5px;}
+  .rest-timer-box .timer-right .row{max-width:120px;}
+  .rest-timer-box .timer-wrap .row .btn{padding:6px 8px;font-size:11px;}
 
   .bar-chart{display:flex;align-items:flex-end;gap:6px;height:160px;}
   .bar-chart .bar-col{flex:1;display:flex;flex-direction:column;align-items:center;justify-content:flex-end;height:100%;gap:4px;}
@@ -432,6 +452,7 @@
         </div>
       </div>
       <div class="hint" style="margin-top:6px;">Overload climbs are counted from this date, every other week.</div>
+      <label class="check-row"><input type="checkbox" id="profShowGifs"> Show a short movement animation for each exercise (handy while you're still learning the moves — turn it off anytime)</label>
       <button class="btn" style="width:100%;margin-top:14px;" onclick="saveProfile()">Save Profile</button>
     </div>
 
@@ -504,7 +525,8 @@ const DEFAULT_PROFILE = {
   height: "5'5\"",
   weight: 185,
   build: 'lean',
-  startDate: todayStr()
+  startDate: todayStr(),
+  showGifs: true // show the movement animation preview while logging/doing an exercise
 };
 
 /* ---------------- Categories, equipment & icons (full customization) ---------------- */
@@ -607,6 +629,34 @@ function estimatedMinutes(ex){
 }
 function fmtMinutes(ex){ return '~' + estimatedMinutes(ex) + ' min'; }
 function prescriptionWithTime(ex){ return prescriptionLabel(ex) + ' · ' + fmtMinutes(ex); }
+
+/* ---------------- Movement preview animations ----------------
+   Real exercise-demo GIFs are copyrighted footage from fitness sites, and this app makes
+   no external requests — so instead, each category gets a small original animated stick-
+   figure illustration (a simple 2-pose loop, the same trick real form-check GIFs use) that
+   shows the basic movement pattern. Toggle on/off in Settings → Your Profile. */
+const MOVEMENT_ANIMATIONS = {
+  'legs-compound': { title:'Squat down, drive back up', svg:`<svg viewBox="0 0 100 100" fill="none" stroke="currentColor" stroke-width="4" stroke-linecap="round"><style>.ll-fig{transform-box:fill-box;transform-origin:50% 100%;animation:llsquat 1.4s ease-in-out infinite;}@keyframes llsquat{0%,100%{transform:scaleY(1);}50%{transform:scaleY(.72);}}</style><g class="ll-fig"><circle cx="50" cy="16" r="7" fill="none"/><line x1="50" y1="23" x2="50" y2="58"/><line x1="50" y1="58" x2="36" y2="90"/><line x1="50" y1="58" x2="64" y2="90"/><line x1="50" y1="30" x2="32" y2="42"/><line x1="50" y1="30" x2="68" y2="42"/></g></svg>` },
+  'legs-isolation': { title:'Extend, then lower with control', svg:`<svg viewBox="0 0 100 100" fill="none" stroke="currentColor" stroke-width="4" stroke-linecap="round"><style>.li-shin{transform-box:fill-box;transform-origin:0% 0%;animation:liext 1.4s ease-in-out infinite;}@keyframes liext{0%,100%{transform:rotate(0deg);}50%{transform:rotate(-35deg);}}</style><circle cx="50" cy="16" r="7" fill="none"/><line x1="50" y1="23" x2="50" y2="58"/><line x1="50" y1="58" x2="36" y2="90"/><g class="li-shin" style="transform-origin:50px 58px;"><line x1="50" y1="58" x2="64" y2="90"/></g><line x1="50" y1="30" x2="32" y2="42"/><line x1="50" y1="30" x2="68" y2="42"/></svg>` },
+  'glutes': { title:'Drive your hips up, squeeze at the top', svg:`<svg viewBox="0 0 100 100" fill="none" stroke="currentColor" stroke-width="4" stroke-linecap="round"><style>.gl-fig{animation:glhip 1.2s ease-in-out infinite;}@keyframes glhip{0%,100%{transform:translateY(0);}50%{transform:translateY(-8px);}}</style><g class="gl-fig"><circle cx="50" cy="16" r="7" fill="none"/><line x1="50" y1="23" x2="50" y2="58"/><line x1="50" y1="58" x2="36" y2="90"/><line x1="50" y1="58" x2="64" y2="90"/><line x1="50" y1="30" x2="32" y2="42"/><line x1="50" y1="30" x2="68" y2="42"/></g></svg>` },
+  'chest': { title:'Lower to your chest, press back up', svg:`<svg viewBox="0 0 100 100" fill="none" stroke="currentColor" stroke-width="4" stroke-linecap="round"><style>.ch-bar{transform-box:fill-box;transform-origin:50% 50%;animation:chpress 1.4s ease-in-out infinite;}@keyframes chpress{0%,100%{transform:translateY(0);}50%{transform:translateY(14px);}}</style><circle cx="50" cy="16" r="7" fill="none"/><line x1="50" y1="23" x2="50" y2="58"/><line x1="50" y1="58" x2="36" y2="90"/><line x1="50" y1="58" x2="64" y2="90"/><line x1="50" y1="30" x2="34" y2="40"/><line x1="50" y1="30" x2="66" y2="40"/><g class="ch-bar"><line x1="20" y1="40" x2="80" y2="40" stroke-width="5"/><circle cx="20" cy="40" r="5" fill="currentColor"/><circle cx="80" cy="40" r="5" fill="currentColor"/></g></svg>` },
+  'back': { title:'Pull the handle to your body, control it back', svg:`<svg viewBox="0 0 100 100" fill="none" stroke="currentColor" stroke-width="4" stroke-linecap="round"><style>.bk-handle{transform-box:fill-box;animation:bkrow 1.4s ease-in-out infinite;}@keyframes bkrow{0%,100%{transform:translateX(0);}50%{transform:translateX(-28px);}}</style><circle cx="50" cy="16" r="7" fill="none"/><line x1="50" y1="23" x2="50" y2="58"/><line x1="50" y1="58" x2="36" y2="90"/><line x1="50" y1="58" x2="64" y2="90"/><line x1="50" y1="34" x2="80" y2="34"/><g class="bk-handle"><circle cx="80" cy="34" r="5" fill="currentColor"/></g></svg>` },
+  'shoulders': { title:'Press straight overhead, lower with control', svg:`<svg viewBox="0 0 100 100" fill="none" stroke="currentColor" stroke-width="4" stroke-linecap="round"><style>.sh-bar{transform-box:fill-box;animation:shpress 1.4s ease-in-out infinite;}@keyframes shpress{0%,100%{transform:translateY(0);}50%{transform:translateY(-26px);}}</style><circle cx="50" cy="16" r="7" fill="none"/><line x1="50" y1="23" x2="50" y2="58"/><line x1="50" y1="58" x2="36" y2="90"/><line x1="50" y1="58" x2="64" y2="90"/><g class="sh-bar"><line x1="30" y1="40" x2="70" y2="40" stroke-width="5"/><circle cx="30" cy="40" r="5" fill="currentColor"/><circle cx="70" cy="40" r="5" fill="currentColor"/></g></svg>` },
+  'biceps': { title:'Curl up slowly, squeeze, lower with control', svg:`<svg viewBox="0 0 100 100" fill="none" stroke="currentColor" stroke-width="4" stroke-linecap="round"><style>.bi-fore{transform-box:fill-box;transform-origin:0% 0%;animation:bicurl 1.3s ease-in-out infinite;}@keyframes bicurl{0%,100%{transform:rotate(0deg);}50%{transform:rotate(-110deg);}}</style><circle cx="50" cy="16" r="7" fill="none"/><line x1="50" y1="23" x2="50" y2="58"/><line x1="50" y1="58" x2="36" y2="90"/><line x1="50" y1="58" x2="64" y2="90"/><line x1="50" y1="30" x2="68" y2="48"/><g class="bi-fore" style="transform-origin:68px 48px;"><line x1="68" y1="48" x2="80" y2="66"/><circle cx="80" cy="66" r="4" fill="currentColor"/></g></svg>` },
+  'triceps': { title:'Extend fully, then bend back with control', svg:`<svg viewBox="0 0 100 100" fill="none" stroke="currentColor" stroke-width="4" stroke-linecap="round"><style>.tr-fore{transform-box:fill-box;transform-origin:0% 0%;animation:triext 1.3s ease-in-out infinite;}@keyframes triext{0%,100%{transform:rotate(70deg);}50%{transform:rotate(0deg);}}</style><circle cx="50" cy="16" r="7" fill="none"/><line x1="50" y1="23" x2="50" y2="58"/><line x1="50" y1="58" x2="36" y2="90"/><line x1="50" y1="58" x2="64" y2="90"/><line x1="50" y1="30" x2="60" y2="20"/><g class="tr-fore" style="transform-origin:60px 20px;"><line x1="60" y1="20" x2="60" y2="40"/><circle cx="60" cy="40" r="4" fill="currentColor"/></g></svg>` },
+  'core': { title:'Crunch up, lower with control', svg:`<svg viewBox="0 0 100 100" fill="none" stroke="currentColor" stroke-width="4" stroke-linecap="round"><style>.co-fig{transform-box:fill-box;transform-origin:50% 0%;animation:cocrunch 1.3s ease-in-out infinite;}@keyframes cocrunch{0%,100%{transform:scaleY(1);}50%{transform:scaleY(.82);}}</style><g class="co-fig"><circle cx="50" cy="16" r="7" fill="none"/><line x1="50" y1="23" x2="50" y2="58"/><line x1="50" y1="58" x2="36" y2="90"/><line x1="50" y1="58" x2="64" y2="90"/><line x1="50" y1="30" x2="32" y2="42"/><line x1="50" y1="30" x2="68" y2="42"/></g></svg>` },
+  'fullbody': { title:'Explosive full-body movement', svg:`<svg viewBox="0 0 100 100" fill="none" stroke="currentColor" stroke-width="4" stroke-linecap="round"><style>.fb-fig{animation:fbjump 1s ease-in-out infinite;}@keyframes fbjump{0%,100%{transform:translateY(0);}50%{transform:translateY(-16px);}}</style><g class="fb-fig"><circle cx="50" cy="16" r="7" fill="none"/><line x1="50" y1="23" x2="50" y2="58"/><line x1="50" y1="58" x2="36" y2="90"/><line x1="50" y1="58" x2="64" y2="90"/><line x1="50" y1="30" x2="30" y2="20"/><line x1="50" y1="30" x2="70" y2="20"/></g></svg>` },
+  'conditioning': { title:'Keep a steady, sustained pace', svg:`<svg viewBox="0 0 100 100" fill="none" stroke="currentColor" stroke-width="4" stroke-linecap="round"><style>.cn-l1{transform-box:fill-box;transform-origin:0% 0%;animation:cnl1 .6s steps(2) infinite;}.cn-l2{transform-box:fill-box;transform-origin:0% 0%;animation:cnl2 .6s steps(2) infinite;}@keyframes cnl1{0%{transform:rotate(20deg);}50%{transform:rotate(-20deg);}100%{transform:rotate(20deg);}}@keyframes cnl2{0%{transform:rotate(-20deg);}50%{transform:rotate(20deg);}100%{transform:rotate(-20deg);}}</style><circle cx="50" cy="16" r="7" fill="none"/><line x1="50" y1="23" x2="50" y2="58"/><g class="cn-l1" style="transform-origin:50px 58px;"><line x1="50" y1="58" x2="36" y2="90"/></g><g class="cn-l2" style="transform-origin:50px 58px;"><line x1="50" y1="58" x2="64" y2="90"/></g><line x1="50" y1="30" x2="32" y2="42"/><line x1="50" y1="30" x2="68" y2="42"/></svg>` }
+};
+function movementPreviewHtml(ex){
+  if(profile.showGifs === false) return '';
+  const anim = MOVEMENT_ANIMATIONS[ex.category];
+  if(!anim) return '';
+  return `<div class="movement-preview">
+    <div class="mp-figure">${anim.svg}</div>
+    <div class="mp-label"><strong>How it's done</strong>${anim.title} — a simple looping illustration, not real footage. Turn this off anytime in Settings.</div>
+  </div>`;
+}
 
 // Baseline weights calibrated for a BEGINNER lifter. Unless otherwise noted, new
 // library entries default to 4 sets × 12–15 reps (per your own workout-day exercises
@@ -1098,6 +1148,18 @@ function buildSteps(day){
   steps.push({ type:'complete' });
   return steps;
 }
+// Each step in the progress bar gets its own color — exercises use their category
+// color (so the bar visibly changes as you move between different kinds of work),
+// warm-up/finisher/cardio get a neutral tone.
+function stepColor(step){
+  if(step.type === 'exercise'){
+    const ex = exercises.find(e=>e.id===step.exerciseId);
+    const def = ex && categoryDef(ex.category);
+    return def ? def.color : 'var(--accent)';
+  }
+  if(step.type === 'finisher' || step.type === 'cardio') return 'var(--activity)';
+  return 'var(--text-dim)';
+}
 
 // Has the user made any progress on today's selection (so switching away should confirm)?
 function planHasProgress(plan){ return !!plan && (plan.stepIndex > 0 || !!plan.activityLogId); }
@@ -1235,10 +1297,17 @@ function renderPlanView(){
   const steps = buildSteps(day);
   const idx = Math.min(plan.stepIndex, steps.length-1);
   const step = steps[idx];
-  const pct = Math.round((idx/(steps.length-1))*100);
+  const barSteps = steps.filter(s=>s.type!=='complete'); // the "complete" screen isn't its own segment
+  const pct = Math.round((Math.min(idx, barSteps.length) / barSteps.length) * 100);
 
-  let inner = `<div class="progress-track"><div class="progress-fill" style="width:${pct}%;"></div></div>
-    <div class="progress-label">Step ${idx+1} of ${steps.length} · Day ${day.dayNum} — ${day.title} · <a href="#" onclick="changePlanDay();return false;" style="color:var(--accent);">change day</a></div>`;
+  const segmentsHtml = barSteps.map((s,i)=>{
+    const cls = i < idx ? 'done' : (i === idx ? 'current' : 'upcoming');
+    const opacity = cls === 'upcoming' ? 0.25 : 1;
+    return `<div class="progress-seg ${cls}" style="background:${stepColor(s)};opacity:${opacity};" title="Step ${i+1}"></div>`;
+  }).join('');
+
+  let inner = `<div class="progress-track">${segmentsHtml}</div>
+    <div class="progress-label"><span class="progress-pct">${pct}%</span> · Step ${idx+1} of ${steps.length} · Day ${day.dayNum} — ${day.title} · <a href="#" onclick="changePlanDay();return false;" style="color:var(--accent);">change day</a></div>`;
 
   if(step.type === 'warmup'){
     inner += `<h2>Warm-up</h2>
@@ -1252,38 +1321,45 @@ function renderPlanView(){
     const wk = currentWeekNumber();
     const target = targetForExerciseAtWeek(ex, wk);
     inner += `<div style="display:flex;align-items:center;gap:12px;">${iconBadge(ex)}<div><h2 style="margin-bottom:2px;">${ex.name}</h2><div class="hint" style="margin-bottom:0;">${categoryLabel(ex.category)}</div></div></div>
-      <div class="presc" style="margin-top:10px;">Goal: ${prescriptionLabel(ex)} @ ${fmtWeight(ex, target)}</div>
-      <div id="wizardSetsContainer" style="margin-top:14px;"></div>
-      <button class="btn secondary" onclick="addWizardSetRow()" style="width:100%;margin-top:6px;">+ Add Set</button>
-      <label class="check-row"><input type="checkbox" id="wizardSaveDefault"> Save these numbers as my new default for this exercise</label>
-      <div class="rest-timer-box">
-        <div class="hdr">Rest Timer — between sets</div>
-        <div class="timer-wrap">
-          <div class="presets">
-            <button class="btn secondary" onclick="setTimerPreset(30)">30s</button>
-            <button class="btn secondary" onclick="setTimerPreset(60)">60s</button>
-            <button class="btn secondary" onclick="setTimerPreset(90)">90s</button>
-            <button class="btn secondary" onclick="setTimerPreset(120)">120s</button>
-            <button class="btn secondary" onclick="setTimerPreset(180)">180s</button>
-          </div>
-          <div class="row" style="max-width:220px;">
-            <input type="number" id="customTimerInput" placeholder="Custom seconds">
-            <button class="btn ghost" onclick="setTimerCustom()">Set</button>
-          </div>
-          <div class="timer-ring">
-            <svg width="130" height="130">
-              <circle cx="65" cy="65" r="54" stroke="#2a2f3d" stroke-width="10" fill="none"/>
-              <circle id="timerCircle" cx="65" cy="65" r="54" stroke="#3ddc97" stroke-width="10" fill="none"
-                stroke-linecap="round" stroke-dasharray="339" stroke-dashoffset="0"/>
-            </svg>
-            <div class="time" id="timerDisplay">01:00</div>
-          </div>
-          <div class="row" style="max-width:220px;">
-            <button class="btn" id="timerStartBtn" onclick="toggleTimer()">Start</button>
-            <button class="btn secondary" onclick="resetTimer()">Reset</button>
+      <div class="wizard-top-row">
+        ${movementPreviewHtml(ex)}
+        <div class="rest-timer-box">
+          <div class="hdr">Rest Timer — between sets</div>
+          <div class="timer-wrap">
+            <div class="timer-left">
+              <div class="presets">
+                <button class="btn secondary" onclick="setTimerPreset(30)">30s</button>
+                <button class="btn secondary" onclick="setTimerPreset(60)">60s</button>
+                <button class="btn secondary" onclick="setTimerPreset(90)">90s</button>
+                <button class="btn secondary" onclick="setTimerPreset(120)">120s</button>
+                <button class="btn secondary" onclick="setTimerPreset(180)">180s</button>
+              </div>
+              <div class="row">
+                <input type="number" id="customTimerInput" placeholder="Custom s">
+                <button class="btn ghost" onclick="setTimerCustom()">Set</button>
+              </div>
+            </div>
+            <div class="timer-right">
+              <div class="timer-ring">
+                <svg width="60" height="60">
+                  <circle cx="30" cy="30" r="24" stroke="#2a2f3d" stroke-width="5" fill="none"/>
+                  <circle id="timerCircle" cx="30" cy="30" r="24" stroke="#3ddc97" stroke-width="5" fill="none"
+                    stroke-linecap="round" stroke-dasharray="151" stroke-dashoffset="0"/>
+                </svg>
+                <div class="time" id="timerDisplay">01:00</div>
+              </div>
+              <div class="row">
+                <button class="btn" id="timerStartBtn" onclick="toggleTimer()">Start</button>
+                <button class="btn secondary" onclick="resetTimer()">Reset</button>
+              </div>
+            </div>
           </div>
         </div>
       </div>
+      <div class="presc" style="margin-top:0;margin-bottom:14px;">Goal: ${prescriptionLabel(ex)} @ ${fmtWeight(ex, target)}</div>
+      <div id="wizardSetsContainer"></div>
+      <button class="btn secondary" onclick="addWizardSetRow()" style="width:100%;margin-top:6px;">+ Add Set</button>
+      <label class="check-row"><input type="checkbox" id="wizardSaveDefault"> Save these numbers as my new default for this exercise</label>
       <div class="wizard-actions">
         <button class="btn ghost" onclick="planBack()">← Back</button>
         <button class="btn ghost" onclick="wizardSkipExercise()">Couldn't finish — skip</button>
@@ -1512,7 +1588,7 @@ function renderLogView(){
     return;
   }
   document.getElementById('logExerciseTitle').innerHTML =
-    `<div style="display:flex;align-items:center;gap:10px;">${iconBadge(ex,'sm')}<div>Logging: <strong>${ex.name}</strong><div class="presc" style="margin-top:1px;">Goal: ${prescriptionLabel(ex)}</div></div></div>`;
+    `<div style="display:flex;align-items:center;gap:10px;">${iconBadge(ex,'sm')}<div>Logging: <strong>${ex.name}</strong><div class="presc" style="margin-top:1px;">Goal: ${prescriptionLabel(ex)}</div></div></div>${movementPreviewHtml(ex)}`;
   const wk = currentWeekNumber();
   document.getElementById('logTargetDisplay').value = fmtWeight(ex, targetForExerciseAtWeek(ex, wk)) + ' (Week ' + wk + ')';
   document.getElementById('setsContainer').innerHTML = '';
@@ -1575,7 +1651,7 @@ let timerTotal = 60;
 let timerRemaining = 60;
 let timerInterval = null;
 let timerRunning = false;
-const CIRC = 2 * Math.PI * 54; // matches the compact 130px ring's radius
+const CIRC = 2 * Math.PI * 24; // matches the condensed 60px ring's radius
 
 // The timer's DOM only exists while an 'exercise' wizard step is on screen, so every
 // lookup here is guarded — these functions are safe to call (or keep ticking in the
@@ -1933,6 +2009,7 @@ function renderSettings(){
   document.getElementById('profWeight').value = profile.weight;
   document.getElementById('profBuild').value = profile.build;
   document.getElementById('profStartDate').value = profile.startDate;
+  document.getElementById('profShowGifs').checked = profile.showGifs !== false;
   buildSettingsFilterSelectsOnce();
   renderSettingsExerciseList();
 }
@@ -2109,9 +2186,12 @@ function saveProfile(){
   profile.weight = parseFloat(document.getElementById('profWeight').value)||profile.weight;
   profile.build = document.getElementById('profBuild').value;
   profile.startDate = document.getElementById('profStartDate').value || profile.startDate;
+  profile.showGifs = document.getElementById('profShowGifs').checked;
   saveAll();
   showToast('Profile saved');
   renderDashboard();
+  renderPlanView();
+  renderLogView();
 }
 
 function exportData(){
