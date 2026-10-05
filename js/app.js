@@ -34,6 +34,7 @@ function switchView(name){
   hideTip(); // a tip belongs to the screen it appeared on
   closeNavGroups();
   updateNavState(name);
+  setTimeout(refreshWakeLock, 0);
   window.scrollTo(0, 0);
   document.querySelectorAll('.view').forEach(v=>v.classList.toggle('active', v.id==='view-'+name));
   if(name === 'dashboard') renderDashboard();
@@ -214,11 +215,14 @@ function currentPlanMeta(plan){
   return null;
 }
 
+function offerPlanUndo(prev, msg){
+  if(!planHasProgress(prev)) return;
+  const snapshot = JSON.parse(JSON.stringify(prev));
+  showUndo(msg, ()=>{ save(LS_KEYS.todayPlan, snapshot); planPickerExpanded = false; renderPlanView(); renderDashboard(); });
+}
 function selectPlanDay(dayId){
   const existing = loadTodayPlan();
-  if(planHasProgress(existing) && !planIsSame(existing, 'lift', dayId)){
-    if(!confirm('Switch to a different day? Your progress on today\'s current selection will be reset.')) return;
-  }
+  if(planHasProgress(existing) && !planIsSame(existing, 'lift', dayId)) offerPlanUndo(existing, 'Switched day — progress reset');
   saveTodayPlan({ kind:'lift', dayId, activityId:null, activityLogId:null, stepIndex:0, sessionLogIds:[] });
   planPickerExpanded = false; // the guided workout becomes the main screen once a day is picked
   renderPlanView();
@@ -226,16 +230,14 @@ function selectPlanDay(dayId){
 }
 function selectActivityDay(activityId){
   const existing = loadTodayPlan();
-  if(planHasProgress(existing) && !planIsSame(existing, 'activity', activityId)){
-    if(!confirm('Switch to a different day? Your progress on today\'s current selection will be reset.')) return;
-  }
+  if(planHasProgress(existing) && !planIsSame(existing, 'activity', activityId)) offerPlanUndo(existing, 'Switched day — progress reset');
   saveTodayPlan({ kind:'activity', activityId, dayId:null, stepIndex:0, sessionLogIds:[], activityLogId:null });
   planPickerExpanded = false;
   renderPlanView();
   renderDashboard();
 }
 function changePlanDay(){
-  if(!confirm('Choose a different day? Any unsaved progress will be reset.')) return;
+  offerPlanUndo(loadTodayPlan(), 'Day cleared — progress reset');
   saveTodayPlan({ kind:null, dayId:null, activityId:null, activityLogId:null, stepIndex:0, sessionLogIds:[] });
   planPickerExpanded = true;
   renderPlanView();
@@ -439,6 +441,7 @@ function renderPlanView(){
       ${coachingHtml(ex)}
       <details class="coach-box"><summary>💪 Muscles worked</summary>${muscleRolesHtml(ex)}</details>
       <div class="hint" style="margin-bottom:8px;">Log what you <strong>actually</strong> did.${ex.unit==='lb' && !ex.repsAreTime ? ` Hit <strong>${repHi} reps on every set</strong> with good form and you've earned a weight increase.` : ''} Rest timer is set to ${fmtRest(rx.rest)}.</div>
+      ${lastTimeHtml(ex)}
       <div id="wizardSetsContainer"></div>
       <button class="btn secondary" onclick="addWizardSetRow()" style="width:100%;margin-top:6px;">+ Add Set</button>
       <label>How did that exercise feel?</label>
@@ -452,7 +455,7 @@ function renderPlanView(){
       <div class="wizard-actions">
         <button class="btn ghost" onclick="planBack()">← Back</button>
         <button class="btn ghost" onclick="wizardSkipExercise()">Couldn't finish — skip</button>
-        <button class="btn" onclick="wizardSaveExercise()">Save &amp; Next →</button>
+        <button class="btn" data-save-btn onclick="wizardSaveExercise()">Save &amp; Next →</button>
       </div>`;
   } else if(step.type === 'finisher' || step.type === 'cardio'){
     inner += `<h2>${step.data.title} <span style="color:var(--text-dim);font-weight:600;font-size:12px;">(${step.data.duration})</span></h2>
@@ -514,6 +517,7 @@ function renderPlanView(){
   } else {
     hideTip();
   }
+  refreshWakeLock();
 }
 
 function addWizardSetRow(ex, target, repsDefault){
@@ -530,19 +534,8 @@ function addWizardSetRow(ex, target, repsDefault){
     target = suggestFor(ex, rx, todayReadiness()).weight;
     repsDefault = repRange(rx.reps)[0];
   }
-  const idx = container.children.length + 1;
-  const row = document.createElement('div');
-  row.className = 'set-row';
-  const weightLabel = ex.unit==='reps' ? 'Reps' : (ex.unit==='seconds' ? 'Seconds' : 'Weight (lb)');
-  const showReps = ex.unit === 'lb';
   const defaultReps = ex.repsAreTime ? '' : (repsDefault != null ? repsDefault : defaultRepsValue(ex));
-  row.innerHTML = `
-    <div class="idx">#${idx}</div>
-    ${showReps ? `<input type="number" class="set-reps" placeholder="Reps" value="${defaultReps}">` : ''}
-    <input type="number" class="set-weight" placeholder="${weightLabel}" value="${target||''}">
-    <button class="icon-btn" onclick="this.parentElement.remove(); renumberWizardSets();">✕</button>
-  `;
-  container.appendChild(row);
+  buildSetRow(container, ex, target||'', defaultReps);
 }
 function renumberWizardSets(){
   document.querySelectorAll('#wizardSetsContainer .set-row').forEach((row,i)=>{
@@ -558,14 +551,7 @@ function wizardSaveExercise(){
   const si = stepExercise(plan, day, step);
   const ex = si.ex;
   if(!ex) return;
-  const rows = [...document.querySelectorAll('#wizardSetsContainer .set-row')];
-  const sets = rows.map(row=>{
-    const repsEl = row.querySelector('.set-reps');
-    const weightEl = row.querySelector('.set-weight');
-    const reps = repsEl ? (parseFloat(repsEl.value)||0) : (parseFloat(weightEl.value)||0);
-    const weight = repsEl ? (parseFloat(weightEl.value)||0) : (ex.unit==='lb'?0:parseFloat(weightEl.value)||0);
-    return { reps, weight };
-  }).filter(s=> s.reps>0 || s.weight>0);
+  const sets = collectSets(document.getElementById('wizardSetsContainer'), ex);
   if(sets.length===0){ showToast('Log at least one set, or use "Couldn\'t finish"'); return; }
   const rx = si.rx;
   const readiness = todayReadiness();
@@ -599,8 +585,10 @@ function applySaveAsDefault(ex, sets){
 function wizardSkipExercise(){
   wizardFeel = 'right';
   const plan = loadTodayPlan();
+  const prevIdx = plan.stepIndex;
+  setTimeout(()=> showUndo('Skipped that exercise', ()=>{ saveTodayPlan({ stepIndex: prevIdx }); renderPlanView(); renderDashboard(); }), 50);
   saveTodayPlan({ stepIndex: plan.stepIndex + 1 });
-  showToast('Skipped — no worries, on to the next one');
+
   renderPlanView();
   renderDashboard();
 }
@@ -712,7 +700,7 @@ function renderLogView(){
   document.getElementById('logTargetDisplay').value = (ex.workingWeight!=null && ex.workingWeight!=='')
     ? fmtWeight(ex, workingWeight(ex)) + ' (your working weight)'
     : fmtWeight(ex, targetForExerciseAtWeek(ex, wk)) + ' (Week ' + wk + ')';
-  document.getElementById('logExerciseTitle').innerHTML += coachingHtml(ex).replace('<details class="coach-box" open>','<details class="coach-box">');
+  document.getElementById('logExerciseTitle').innerHTML += lastTimeHtml(ex) + coachingHtml(ex).replace('<details class="coach-box" open>','<details class="coach-box">');
   document.getElementById('setsContainer').innerHTML = '';
   const numSets = ex.targetSets || 3;
   for(let i=0;i<numSets;i++) addSetRow();
@@ -723,20 +711,11 @@ function renderLogView(){
 
 function addSetRow(){
   const ex = exercises.find(e=>e.id===selectedExerciseId);
+  if(!ex) return;
   const container = document.getElementById('setsContainer');
-  const idx = container.children.length + 1;
-  const row = document.createElement('div');
-  row.className = 'set-row';
-  const weightLabel = ex && ex.unit==='reps' ? 'Reps' : (ex && ex.unit==='seconds' ? 'Seconds' : 'Weight (lb)');
-  const showReps = !(ex && ex.unit !== 'lb');
-  const defaultReps = defaultRepsValue(ex);
-  row.innerHTML = `
-    <div class="idx">#${idx}</div>
-    ${showReps ? `<input type="number" class="set-reps" placeholder="Reps" value="${defaultReps}">` : ''}
-    <input type="number" class="set-weight" placeholder="${weightLabel}">
-    <button class="icon-btn" onclick="this.parentElement.remove(); renumberSets();">✕</button>
-  `;
-  container.appendChild(row);
+  const prev = [...container.querySelectorAll('.set-row')].pop();
+  const w = prev ? prev.querySelector('.set-weight').value : workingWeight(ex);
+  buildSetRow(container, ex, w, defaultRepsValue(ex));
 }
 function renumberSets(){
   document.querySelectorAll('#setsContainer .set-row').forEach((row,i)=>{
@@ -748,14 +727,7 @@ function saveWorkoutLog(){
   const ex = exercises.find(e=>e.id===selectedExerciseId);
   if(!ex){ showToast('Pick an exercise first'); return; }
   const date = document.getElementById('logDate').value || todayStr();
-  const rows = [...document.querySelectorAll('#setsContainer .set-row')];
-  const sets = rows.map(row=>{
-    const repsEl = row.querySelector('.set-reps');
-    const weightEl = row.querySelector('.set-weight');
-    const reps = repsEl ? (parseFloat(repsEl.value)||0) : (parseFloat(weightEl.value)||0);
-    const weight = repsEl ? (parseFloat(weightEl.value)||0) : (ex.unit==='lb'?0:parseFloat(weightEl.value)||0);
-    return { reps, weight };
-  }).filter(s=> s.reps>0 || s.weight>0);
+  const sets = collectSets(document.getElementById('setsContainer'), ex);
   if(sets.length===0){ showToast('Add at least one set with data'); return; }
   const notes = document.getElementById('logNotes').value.trim();
   const award = awardForLog(ex, sets);

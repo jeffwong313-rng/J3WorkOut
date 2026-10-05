@@ -128,7 +128,14 @@ function updateExerciseField(id, field, value){
   showToast('Updated');
 }
 function deleteExercise(id){
-  if(!confirm('Delete this exercise? Logged history for it will remain but be unlinked.')) return;
+  const idx = exercises.findIndex(e=>e.id===id); if(idx < 0) return;
+  const removed = exercises[idx];
+  const membership = WORKOUT_DAYS.map(d=>({ id:d.id, pos:d.lifts.indexOf(id) })).filter(m=>m.pos>=0);
+  showUndo(`Deleted ${escapeHtml(removed.name)}`, ()=>{
+    exercises.splice(idx, 0, removed);
+    membership.forEach(m=>{ const d = WORKOUT_DAYS.find(x=>x.id===m.id); if(d && !d.lifts.includes(id)) d.lifts.splice(m.pos, 0, id); });
+    saveAll(); renderSettingsExerciseList(); renderExerciseList(); renderWorkoutDaysSettings();
+  });
   exercises = exercises.filter(e=>e.id!==id);
   WORKOUT_DAYS.forEach(d=>{ d.lifts = d.lifts.filter(exId=>exId!==id); }); // drop it from any workout day too
   saveAll();
@@ -226,13 +233,13 @@ function addWorkoutDay(){
 }
 function deleteWorkoutDay(id){
   if(WORKOUT_DAYS.length <= 1){ showToast('Keep at least one workout day'); return; }
-  if(!confirm('Delete this workout day? This cannot be undone.')) return;
+  const idx = WORKOUT_DAYS.findIndex(d=>d.id===id); const removed = WORKOUT_DAYS[idx];
   WORKOUT_DAYS = WORKOUT_DAYS.filter(d=>d.id!==id);
   saveWorkoutDays();
   renderWorkoutDaysSettings();
   renderPlanView();
   renderDashboard();
-  showToast('Day deleted');
+  showUndo(`Deleted ${escapeHtml(removed.title)}`, ()=>{ WORKOUT_DAYS.splice(idx, 0, removed); saveWorkoutDays(); renderWorkoutDaysSettings(); renderPlanView(); renderDashboard(); });
 }
 
 /* ---- Add-new-exercise builder (name, 30-icon picker, category, equipment, prescription) ---- */

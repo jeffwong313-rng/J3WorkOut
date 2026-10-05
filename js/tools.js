@@ -370,7 +370,8 @@ function newSprintSession(){
   renderSprintsTab();
 }
 function deleteSprintSession(id){
-  if(!confirm('Delete this sprint session?')) return;
+  const idx = sprintSessions.findIndex(s=>s.id===id); const removed = sprintSessions[idx];
+  showUndo('Sprint session deleted', ()=>{ sprintSessions.splice(idx, 0, removed); save(LS_KEYS.sprintSessions, sprintSessions); renderSprintsTab(); });
   sprintSessions = sprintSessions.filter(s=>s.id!==id);
   save(LS_KEYS.sprintSessions, sprintSessions);
   renderSprintsTab();
@@ -571,19 +572,21 @@ function renderHistory(){
   }).join('');
 }
 function deleteLog(id){
+  const idx = logs.findIndex(l=>l.id===id); const removed = logs[idx];
   logs = logs.filter(l=>l.id!==id);
   saveAll();
   renderHistory();
   renderDashboard();
-  showToast('Entry deleted');
+  showUndo('Entry deleted', ()=>{ logs.splice(idx, 0, removed); saveAll(); renderHistory(); renderDashboard(); });
 }
 function deleteActivityLog(id){
+  const idx = activityLogs.findIndex(a=>a.id===id); const removed = activityLogs[idx];
   activityLogs = activityLogs.filter(a=>a.id!==id);
   saveAll();
   renderHistory();
   renderDashboard();
   renderCalendar();
-  showToast('Entry deleted');
+  showUndo('Entry deleted', ()=>{ activityLogs.splice(idx, 0, removed); saveAll(); renderHistory(); renderDashboard(); renderCalendar(); });
 }
 
 /* ---------------- Calendar (monthly progress) ---------------- */

@@ -352,23 +352,11 @@ function fsBackToPick(){ fs.stage = fs.history.length ? 'path' : 'pick'; fs.curr
 function addFsSetRow(ex, weight, reps){
   const c = document.getElementById('fsSetsContainer'); if(!c) return;
   if(!ex){ ex = exercises.find(e=>e.id===fs.current.exerciseId); const rx = fsRx(ex); weight = suggestFor(ex, rx, todayReadiness()).weight; reps = repRange(rx.reps)[0]; }
-  const row = document.createElement('div'); row.className = 'set-row';
-  const weightLabel = ex.unit==='reps' ? 'Reps' : (ex.unit==='seconds' ? 'Seconds' : 'Weight (lb)');
-  const showReps = ex.unit === 'lb';
-  row.innerHTML = `<div class="idx">#${c.children.length+1}</div>
-    ${showReps ? `<input type="number" class="set-reps" placeholder="Reps" value="${ex.repsAreTime?'':reps}">` : ''}
-    <input type="number" class="set-weight" placeholder="${weightLabel}" value="${weight||''}">
-    <button class="icon-btn" onclick="this.parentElement.remove(); document.querySelectorAll('#fsSetsContainer .set-row .idx').forEach((d,i)=>d.textContent='#'+(i+1));">✕</button>`;
-  c.appendChild(row);
+  buildSetRow(c, ex, weight||'', reps);
 }
 function fsSave(){
   const ex = exercises.find(e=>e.id===fs.current.exerciseId); if(!ex) return;
-  const sets = [...document.querySelectorAll('#fsSetsContainer .set-row')].map(row=>{
-    const repsEl = row.querySelector('.set-reps'), weightEl = row.querySelector('.set-weight');
-    const reps = repsEl ? (parseFloat(repsEl.value)||0) : (parseFloat(weightEl.value)||0);
-    const weight = repsEl ? (parseFloat(weightEl.value)||0) : (ex.unit==='lb'?0:parseFloat(weightEl.value)||0);
-    return { reps, weight };
-  }).filter(s=> s.reps>0 || s.weight>0);
+  const sets = collectSets(document.getElementById('fsSetsContainer'), ex);
   if(!sets.length){ showToast('Log at least one set'); return; }
   const rx = fsRx(ex), readiness = todayReadiness();
   const award = awardForLog(ex, sets);
@@ -421,6 +409,7 @@ function renderFreestyle(){
   } else {
     hideTip();
   }
+  refreshWakeLock();
 }
 function levelBarHtml(){
   const L = levelInfo(game.xp);
@@ -551,6 +540,7 @@ function fsDoingHtml(){
     </div>
     ${coachingHtml(ex)}
     <div class="hint" style="margin-bottom:8px;">Log what you actually did.${ex.unit==='lb' && !ex.repsAreTime ? ` Hit ${hi} reps on every set and the weight goes up next time.` : ''}</div>
+    ${lastTimeHtml(ex)}
     <div id="fsSetsContainer"></div>
     <button class="btn secondary" onclick="addFsSetRow()" style="width:100%;margin-top:6px;">+ Add Set</button>
     <label>How did that feel?</label>
@@ -561,7 +551,7 @@ function fsDoingHtml(){
     </div>
     <div class="wizard-actions">
       <button class="btn ghost" onclick="fsBackToPick()">← Pick something else</button>
-      <button class="btn" onclick="fsSave()">Done — where next? →</button>
+      <button class="btn" data-save-btn onclick="fsSave()">Done — where next? →</button>
     </div>
   </div>`;
 }
