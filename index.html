@@ -2,9 +2,17 @@
 <html lang="en">
 <head>
 <meta charset="UTF-8">
-<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
 <title>J3 WorkOut</title>
 <meta name="theme-color" content="#0f1115">
+<meta name="description" content="Your personal workout coach — plans, smart weights, check-ins and progress tracking.">
+<link rel="manifest" href="manifest.webmanifest">
+<link rel="icon" type="image/png" sizes="32x32" href="icons/favicon-32.png">
+<link rel="apple-touch-icon" href="icons/apple-touch-icon.png">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-title" content="J3 WorkOut">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
 <link rel="stylesheet" href="styles.css">
 </head>
 <body>
@@ -64,6 +72,7 @@
 
   <!-- DASHBOARD -->
   <section class="view active" id="view-dashboard">
+    <div id="installBanner"></div>
     <div id="recapBanner"></div>
     <div id="coachWeekCard" style="margin-bottom:16px;"></div>
     <div class="card" id="todayFocusCard" style="margin-bottom:16px;"></div>
@@ -218,6 +227,11 @@
   <!-- SETTINGS -->
   <section class="view" id="view-settings">
     <div class="card" style="margin-bottom:16px;">
+      <h2>📲 Install as an app</h2>
+      <div id="installBox"></div>
+    </div>
+
+    <div class="card" style="margin-bottom:16px;">
       <h2>Appearance</h2>
       <div id="appearanceBox"></div>
     </div>
@@ -318,6 +332,7 @@
 <script src="js/smartplan.js"></script>
 <script src="js/daily.js"></script>
 <script src="js/polish.js"></script>
+<script src="js/pwa.js"></script>
 <script src="js/main.js"></script>
 </body>
 </html>

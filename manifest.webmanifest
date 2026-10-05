@@ -1,0 +1,23 @@
+{
+  "name": "J3 WorkOut",
+  "short_name": "J3 WorkOut",
+  "description": "Your personal workout coach — plans, smart weights, check-ins and progress tracking. Works offline.",
+  "id": "./",
+  "start_url": "./",
+  "scope": "./",
+  "display": "standalone",
+  "orientation": "portrait",
+  "background_color": "#0f1115",
+  "theme_color": "#0f1115",
+  "categories": ["health", "fitness", "lifestyle"],
+  "icons": [
+    { "src": "icons/icon-192.png", "sizes": "192x192", "type": "image/png", "purpose": "any" },
+    { "src": "icons/icon-512.png", "sizes": "512x512", "type": "image/png", "purpose": "any" },
+    { "src": "icons/icon-maskable-512.png", "sizes": "512x512", "type": "image/png", "purpose": "maskable" }
+  ],
+  "shortcuts": [
+    { "name": "Today's workout", "short_name": "Workout", "url": "./?view=plan", "icons": [{ "src": "icons/icon-192.png", "sizes": "192x192" }] },
+    { "name": "Freestyle", "short_name": "Freestyle", "url": "./?view=freestyle", "icons": [{ "src": "icons/icon-192.png", "sizes": "192x192" }] },
+    { "name": "Log a workout", "short_name": "Log", "url": "./?view=log", "icons": [{ "src": "icons/icon-192.png", "sizes": "192x192" }] }
+  ]
+}

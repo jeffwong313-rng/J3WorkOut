@@ -24,4 +24,6 @@ function renderAll(){
 applyAppearance();
 updateTimerDisplay();
 renderAll();
+renderInstallCard();
+openViewFromUrl();
 maybeStartTour();
