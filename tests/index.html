@@ -154,6 +154,48 @@ test('PR timeline only counts improvements after the first session', ()=>{
   eq(r, [1, ['weight','e1rm'], true]);
 });
 
+group('Smarter plan');
+test('deload week: fewer sets and ~10% lighter; working weight protected', ()=>{
+  const r = app(`const saved = profile.coach;
+    profile.coach = { schedule:{1:'x'}, builtAt: todayStr(), firstBuiltAt: todayStr(), deloadWeekOf: mondayOf(todayStr()) };
+    const ex = Object.assign({}, exercises.find(e=>e.id==='dbbench'), { workingWeight:100, increment:5, progress:'hold' });
+    const s = suggestFor(ex, {sets:3,reps:'8–12',rest:120}, 3);
+    updateProgressAfter(ex, [{reps:10,weight:90}], {reps:'8–12'}, 'right', 3);
+    const out = [s.weight, s.sets, ex.workingWeight, isDeloadWeek()];
+    profile.coach = saved; out`);
+  eq(r, [90, 2, 100, true]);
+});
+test('automatic deload lands on every Nth plan week', ()=>{
+  const r = app(`const saved = profile.coach; const t = todayStr();
+    profile.coach = { schedule:{1:'x'}, builtAt:t, deloadEvery:5, firstBuiltAt: addDaysToDateStr(mondayOf(t), -28) };
+    const a = [planWeekIndex(t), isDeloadWeek(t)];
+    profile.coach.firstBuiltAt = addDaysToDateStr(mondayOf(t), -21); const b = [planWeekIndex(t), isDeloadWeek(t)];
+    profile.coach = saved; [a, b]`);
+  eq(r, [[5, true], [4, false]]);
+});
+test('stall detection: 3 sessions without a new best', ()=>{
+  const r = app(`logs.length = 0; const t = todayStr();
+    [[30,40,10],[20,45,10],[14,45,9],[7,45,10],[2,45,8]].forEach(([d,w,rp],i)=> logs.push({id:'s'+i,exerciseId:'dbbench',date:addDaysToDateStr(t,-d),sets:[{reps:rp,weight:w}]}));
+    const stalled = !!stallInfo('dbbench');
+    logs.push({id:'s9',exerciseId:'dbbench',date:t,sets:[{reps:10,weight:50}]});
+    const recovered = !!stallInfo('dbbench'); logs.length = 0; [stalled, recovered]`);
+  eq(r, [true, false]);
+});
+test('plan refresh is due after 8 weeks and can be snoozed', ()=>{
+  const r = app(`const saved = profile.coach; const t = todayStr();
+    profile.coach = { schedule:{1:'x'}, builtAt: addDaysToDateStr(t,-57) }; const a = refreshDue();
+    profile.coach.refreshSnooze = addDaysToDateStr(t, 7); const b = refreshDue();
+    profile.coach.builtAt = addDaysToDateStr(t,-10); profile.coach.refreshSnooze = null; const c = refreshDue();
+    profile.coach = saved; [a,b,c]`);
+  eq(r, [true, false, false]);
+});
+test('refresh cycle rotates exercise choices', ()=>{
+  const r = app(`const a = Object.assign(defaultCoachDraft(), {goal:'hypertrophy', days:[1,3,5]});
+    const p0 = buildProgram(Object.assign({}, a, {cycle:0})).days.flatMap(d=>d.lifts).join();
+    const p1 = buildProgram(Object.assign({}, a, {cycle:1})).days.flatMap(d=>d.lifts).join(); p0 !== p1`);
+  eq(r, true);
+});
+
 /* ================= RUNNER ================= */
 (async function run(){
   await fresh();

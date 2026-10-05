@@ -571,3 +571,15 @@
 .photo-compare img{width:100%;border-radius:10px;display:block;}
 .photo-compare figcaption{text-align:center;font-size:12px;font-weight:700;margin-top:4px;}
 @media (max-width:480px){ .recap-grid{grid-template-columns:repeat(2,1fr);} }
+
+/* ---------- Smarter plan (js/smartplan.js) ---------- */
+.coach-why.deload{border-left-color:var(--core);background:rgba(110,231,240,.07);}
+.smart-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(240px,1fr));gap:10px;margin-top:12px;}
+.smart-cell{background:var(--bg-alt);border:1px solid var(--border);border-radius:12px;padding:12px;}
+.smart-h{font-size:11px;font-weight:800;text-transform:uppercase;letter-spacing:.05em;color:var(--text-dim);}
+.stall-item{background:var(--bg-alt);border:1px solid var(--border);border-left:3px solid var(--warn);border-radius:10px;padding:10px 12px;margin-top:8px;font-size:13px;}
+.stall-actions{display:flex;gap:6px;flex-wrap:wrap;margin-top:8px;}
+.stall-actions .btn{padding:7px 10px;font-size:12px;flex:1 1 auto;}
+.stall-inline{border-color:var(--warn);}
+.stall-inline .stall-item{border:none;padding:0;margin:4px 0 0;background:transparent;}
+.refresh-banner{border-color:var(--accent);background:linear-gradient(135deg,rgba(61,220,151,.10),var(--card) 60%);}

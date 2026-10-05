@@ -58,7 +58,7 @@ function renderDashboard(){
   document.getElementById('headerWeek').textContent = 'Week ' + currentWeekNumber();
   document.getElementById('headerDate').textContent = new Date().toLocaleDateString(undefined,{weekday:'short',month:'short',day:'numeric',timeZone:APP_TIMEZONE}) + ' PT';
 
-  const rb = document.getElementById('recapBanner'); if(rb) rb.innerHTML = recapBannerHtml();
+  const rb = document.getElementById('recapBanner'); if(rb) rb.innerHTML = refreshBannerHtml() + recapBannerHtml();
   renderCoachWeekCard();
   renderTodayFocusCard();
   document.getElementById('statTotalSessions').textContent = logs.length;
@@ -364,6 +364,7 @@ function renderPlanView(){
     const flags = todayFlags();
     const flagTxt = Object.entries(flags).map(([g,l])=> (l==='rest'?'🚫 ':'😣 ') + (recoveryGroup(g)?recoveryGroup(g).label.toLowerCase():g)).join(', ');
     inner += `${rinfo ? `<div class="coach-why" style="margin-top:0;margin-bottom:14px;border-left-color:${rinfo.color}"><strong style="color:${rinfo.color}">Readiness ${ci.readiness}/5 — ${rinfo.label}.</strong> ${rinfo.msg}</div>` : ''}
+      ${deloadBannerHtml()}
       <h2>Warm-up</h2>
       <div class="hint">${step.data.duration} — ${step.data.description}</div>
       <h2 style="margin-top:16px;">Today's plan <span style="color:var(--text-dim);font-weight:600;font-size:12px;">${day.duration||''}</span></h2>
@@ -440,6 +441,7 @@ function renderPlanView(){
         <div class="sugg-why">${sug.reasons.join(' ')}</div>
         <div class="row ww-row"><span>${wwLabel}</span><input type="number" step="any" id="wizardWorking" value="${ex.workingWeight!=null?ex.workingWeight:''}" placeholder="${workingWeight(ex)}"><button class="btn ghost" onclick="setWorkingWeightFromWizard('${ex.id}')">Update</button></div>
       </div>
+      ${(()=>{ const st = stallInfo(ex.id); return st ? `<div class="coach-box stall-inline">📉 ${stallCardHtml(st, true)}</div>` : ''; })()}
       ${coachingHtml(ex)}
       <details class="coach-box"><summary>💪 Muscles worked</summary>${muscleRolesHtml(ex)}</details>
       <div class="hint" style="margin-bottom:8px;">Log what you <strong>actually</strong> did.${ex.unit==='lb' && !ex.repsAreTime ? ` Hit <strong>${repHi} reps on every set</strong> with good form and you've earned a weight increase.` : ''} Rest timer is set to ${fmtRest(rx.rest)}.</div>

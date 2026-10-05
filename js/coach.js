@@ -189,6 +189,7 @@ function chooseSplit(daysIn){
   return best;
 }
 
+let _buildCycle = 0;  // increases with each 8-week refresh to rotate in exercise variations
 let _buildProtect = {}; // areas to protect while the program generator picks exercises
 function pickExercise(poolKey, variant, used, equip){
   const pool = SLOT_POOLS[poolKey];
@@ -196,7 +197,8 @@ function pickExercise(poolKey, variant, used, equip){
   let list = pool.ids.map(lookup).filter(ex=> ex && equip.includes(ex.equipment) && !used.has(ex.id) && !exConflict(ex, _buildProtect).blocked);
   if(!list.length) list = pool.ids.map(lookup).filter(ex=> ex && ex.equipment==='bodyweight' && !used.has(ex.id) && !exConflict(ex, _buildProtect).blocked);
   if(!list.length) return null;
-  const v = pool.compound ? 0 : (variant||0); // keep the big lifts the same so you practice them; vary the small ones
+  // Keep the big lifts the same so you practice them (they rotate each plan refresh); vary the small ones.
+  const v = pool.compound ? (_buildCycle % 2) : ((variant||0) + _buildCycle);
   return list[v % list.length];
 }
 
@@ -204,6 +206,7 @@ function buildProgram(a){
   const goal = COACH_GOALS[a.goal] || COACH_GOALS.hypertrophy;
   const exp = COACH_EXPERIENCE[a.experience] || COACH_EXPERIENCE.new;
   _buildProtect = {}; (a.protect||[]).forEach(g=> _buildProtect[g] = 'sore');
+  _buildCycle = a.cycle || 0;
   const split = chooseSplit(a.days);
   if(!split) return null;
   const days = split.days;
@@ -495,6 +498,7 @@ function suggestFor(ex, rx, readiness){
     w = lighter;
     reasons.push('Rough day → about 10% lighter and one fewer set. Technique day.');
   }
+  const dl = applyDeload(ex, w, sets, inc, reasons); w = dl.w; sets = dl.sets;
   w = round2(Math.max(ex.unit === 'lb' ? 0 : 1, w));
   return { weight:w, sets, reasons, base };
 }
@@ -517,7 +521,7 @@ function updateProgressAfter(ex, sets, rx, feel, readiness){
   const prev = (ex.workingWeight != null && ex.workingWeight !== '') ? +ex.workingWeight : null;
   // On a "rough day" you lifted lighter on purpose — don't let that lower your working weight.
   if(top > 0){
-    if(prev != null && top < prev && flag !== 'down' && readiness <= 2) { /* keep prev */ }
+    if(prev != null && top < prev && flag !== 'down' && (readiness <= 2 || isDeloadWeek())) { /* lighter on purpose — keep prev */ }
     else ex.workingWeight = top;
   }
   ex.progress = flag; ex.lastFeel = feel; ex.lastDone = todayStr();
@@ -763,6 +767,7 @@ function renderCoachWeekCard(){
       </div>
     </div>
     <div class="adh-bar"><div style="width:${pct}%"></div></div>
+    ${isDeloadWeek() ? '<div class="hint" style="margin:8px 0 0;color:var(--core);font-weight:700;">🧘 Deload week — lighter weights, fewer sets. Recovery is part of the plan.</div>' : ''}
     ${weekStripHtml()}
     <div class="hint" style="margin:-4px 0 10px;cursor:pointer;" onclick="switchView('freestyle')">⭐ Level ${levelInfo(game.xp).lvl} ${levelInfo(game.xp).title} · ${game.xp} XP · ${game.badges.length} badges · ${discoveredIds().size} exercises discovered →</div>
     ${todayHtml}
@@ -777,7 +782,7 @@ function defaultCoachDraft(){
   const c = profile.coach || {};
   return { name:c.name||'', experience:c.experience||'new', goal:c.goal||null, targets:(c.targets||[]).slice(),
     targetMode:c.targetMode||'twice', days:(c.days||[]).slice(), minutes:c.minutes||45,
-    equipment:(c.equipment||ALL_EQUIPMENT).slice(), bodyweight: profile.weight||'', protect:(c.protect||[]).slice() };
+    equipment:(c.equipment||ALL_EQUIPMENT).slice(), bodyweight: profile.weight||'', protect:(c.protect||[]).slice(), cycle: c.cycle || 0 };
 }
 function startCoachSetup(){ coachDraft = defaultCoachDraft(); coachStep = 0; coachEditing = true; switchView('coach'); window.scrollTo(0,0); }
 function cancelCoachSetup(){ coachEditing = false; coachDraft = null; renderCoach(); }
@@ -939,7 +944,8 @@ function applyCoachPlan(){
     name:(a.name||'').trim(), experience:a.experience, goal:a.goal, targets:a.targets.slice(), targetMode:a.targetMode,
     days:a.days.slice(), minutes:+a.minutes, equipment:a.equipment.slice(), protect:(a.protect||[]).slice(),
     schedule:Object.fromEntries(result.days.map(d=>[d.weekday, d.id])),
-    splitName:result.split.name, notes:result.notes, builtAt: todayStr(), firstBuiltAt: (profile.coach && profile.coach.firstBuiltAt) || prevBuilt || todayStr()
+    splitName:result.split.name, notes:result.notes, builtAt: todayStr(), cycle: a.cycle || 0,
+    deloadEvery: profile.coach && profile.coach.deloadEvery != null ? profile.coach.deloadEvery : 5, firstBuiltAt: (profile.coach && profile.coach.firstBuiltAt) || prevBuilt || todayStr()
   };
   saveAll();
   coachEditing = false; coachDraft = null;
@@ -1004,6 +1010,8 @@ function renderCoachProgramHtml(){
       <div class="coach-why"><strong>How your training works:</strong> ${g.implication}</div>
       ${(c.notes||[]).length ? `<div class="coach-why warn">${c.notes.map(escapeHtml).join('<br>')}</div>` : ''}
     </div>
+
+    ${smartPlanSectionHtml()}
 
     <div class="card" style="margin-bottom:16px;">
       <h2>Your week</h2>

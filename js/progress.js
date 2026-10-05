@@ -225,7 +225,7 @@ function recapBannerHtml(){
   if((profile.recapSeen || '') === prev) return '';
   return `<div class="card recap-banner" style="margin-bottom:16px;">
     <div class="flex-between" style="gap:10px;flex-wrap:wrap;">
-      <div><strong>📆 Your ${monthLabel(prev)} recap is ready</strong><div class="hint" style="margin:0;">${r.days} days trained · ${r.prs.length} PRs · +${r.xp} XP</div></div>
+      <div><strong>📆 Your ${monthLabel(prev)} recap is ready</strong><div class="hint" style="margin:0;">${r.days} days trained · ${r.prs.length} PR${r.prs.length!==1?'s':''}${r.xp ? ' · +' + r.xp + ' XP' : ''}</div></div>
       <div class="row" style="flex:0 0 auto;gap:8px;"><button class="btn ghost" onclick="profile.recapSeen='${prev}'; saveAll(); renderDashboard();">Dismiss</button>
       <button class="btn" onclick="profile.recapSeen='${prev}'; saveAll(); recapMonth='${prev}'; switchView('progress');">See recap →</button></div>
     </div>
