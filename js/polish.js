@@ -81,6 +81,7 @@ function renderTour(){
 window.addEventListener('resize', ()=>{ if(tourIdx >= 0) renderTour(); });
 function maybeStartTour(){
   if(profile.tourDone || (typeof TEST_MODE !== 'undefined' && TEST_MODE)) return;
+  if(/[?&]view=/.test(location.search)) return; // opened from a home-screen shortcut — go straight there
   // Existing users who already have data skip the auto tour (they can replay it from Settings).
   if(logs.length || coachOn()){ profile.tourDone = true; saveAll(); return; }
   setTimeout(startTour, 500);

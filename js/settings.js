@@ -7,6 +7,7 @@
 function renderSettings(){
   renderBackupStatus();
   renderAppearanceSettings();
+  renderInstallCard();
   document.getElementById('profHeight').value = profile.height;
   document.getElementById('profWeight').value = profile.weight;
   document.getElementById('profBuild').value = profile.build;

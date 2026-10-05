@@ -635,3 +635,11 @@ body.touring{ overflow:hidden; }
 :focus-visible{outline:2px solid var(--accent);outline-offset:2px;}
 .page-h{font-size:13px;text-transform:uppercase;letter-spacing:.06em;color:var(--text-dim);margin:0 0 10px;}
 @media (prefers-reduced-motion: reduce){ *{animation:none !important;transition:none !important;} }
+
+/* ---------- Installed app (js/pwa.js) ---------- */
+/* Keep content clear of the notch / status bar when opened from the home screen. */
+body{ padding-top:env(safe-area-inset-top); padding-bottom:env(safe-area-inset-bottom); }
+@media (display-mode: standalone){ header.top{ padding-top:14px; } }
+.install-banner{border-color:var(--accent);background:linear-gradient(135deg,rgba(61,220,151,.10),var(--card) 60%);}
+.install-steps{margin:8px 0 0;padding-left:20px;font-size:13px;line-height:1.7;}
+.kbd{display:inline-block;border:1px solid var(--border);border-radius:5px;padding:0 5px;font-size:12px;}
