@@ -1,0 +1,164 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>J3 WorkOut — Tests</title>
+<style>
+  body{font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,sans-serif;background:#0f1115;color:#e8eaf0;margin:0;padding:20px;}
+  h1{font-size:20px;margin:0 0 4px;} .sub{color:#9096a8;font-size:13px;margin-bottom:16px;}
+  #summary{font-size:16px;font-weight:800;margin:10px 0 16px;padding:12px 14px;border-radius:10px;background:#1b1f2a;}
+  #summary.pass{color:#3ddc97;} #summary.fail{color:#ff5d6c;}
+  .group{margin:14px 0 6px;font-size:12px;font-weight:800;text-transform:uppercase;letter-spacing:.05em;color:#9096a8;}
+  .t{font-size:13px;padding:5px 0;border-bottom:1px solid #2a2f3d;}
+  .t.ok::before{content:'✓ ';color:#3ddc97;font-weight:900;} .t.bad::before{content:'✗ ';color:#ff5d6c;font-weight:900;}
+  .t .err{color:#ff9f5a;font-size:12px;margin-left:18px;white-space:pre-wrap;}
+  iframe{position:absolute;left:-9999px;width:420px;height:900px;border:0;}
+</style>
+</head>
+<body>
+<h1>J3 WorkOut — automated tests</h1>
+<div class="sub">Loads the real app in a hidden frame in <strong>test mode</strong> (separate storage — your workout data is never touched) and checks the core logic. Open this page any time after a change.</div>
+<div id="summary">Running…</div>
+<div id="out"></div>
+<iframe id="app"></iframe>
+<script>
+/* ---------- tiny test harness ---------- */
+const results = [];
+const tests = [];
+let currentGroup = '';
+function group(name){ currentGroup = name; }
+function test(name, fn){ tests.push({ group: currentGroup, name, fn }); }
+function assert(cond, msg){ if(!cond) throw new Error(msg || 'assertion failed'); }
+function eq(a, b, msg){ const A = JSON.stringify(a), B = JSON.stringify(b); if(A !== B) throw new Error((msg ? msg + ': ' : '') + 'expected ' + B + ', got ' + A); }
+let W; // the app's window
+function clearTestStorage(){ Object.keys(localStorage).filter(k=>k.startsWith('ironlogtest_')).forEach(k=>localStorage.removeItem(k)); }
+function loadApp(){
+  return new Promise(res=>{
+    const f = document.getElementById('app');
+    f.onload = ()=>{ W = f.contentWindow; setTimeout(res, 50); };
+    f.src = '../index.html?test=1&t=' + Date.now();
+  });
+}
+async function fresh(){ clearTestStorage(); await loadApp(); W.eval('profile.showTips=false; saveAll();'); }
+// Run code inside the app's global scope (its top-level `let`s aren't on window).
+function app(code){ return W.eval(code); }
+
+/* ================= TESTS ================= */
+group('Muscle database');
+test('every exercise has a database entry', ()=>{
+  const missing = app("exercises.filter(e=>!MUSCLE_DB[e.id]).map(e=>e.id)");
+  eq(missing, []);
+});
+test('every database muscle key is valid', ()=>{
+  const bad = app("Object.entries(MUSCLE_DB).filter(([k,v])=>v.split('|').flatMap(x=>x.slice(2).split(',')).some(m=>!MUSCLES[m])).map(e=>e[0])");
+  eq(bad, []);
+});
+test('every exercise has at least one primary muscle', ()=>{
+  eq(app("exercises.filter(e=>!exMuscles(e).P.length).map(e=>e.id)"), []);
+});
+test('parseMuscleSpec / muscleLoad', ()=>{
+  eq(app("parseMuscleSpec('P:chest|S:tri,fdelt|T:upback')"), { P:['chest'], S:['tri','fdelt'], T:['upback'] });
+  eq(app("[muscleLoad(exercises.find(e=>e.id==='bench'),'chest'), muscleLoad(exercises.find(e=>e.id==='bench'),'tri'), muscleLoad(exercises.find(e=>e.id==='bench'),'upback'), muscleLoad(exercises.find(e=>e.id==='bench'),'quads')]"), [1,0.5,0.25,0]);
+});
+
+group('Recovery-aware selection');
+test('sore shoulders blocks lateral raise and DB bench, not leg press', ()=>{
+  const r = app("const f={shoulders:'sore'}; ['lateralraise','dbbench','legpress'].map(id=>exConflict(exercises.find(e=>e.id===id), f).blocked)");
+  eq(r, [true, true, false]);
+});
+test('sore only blocks primary/secondary; rest blocks tertiary too', ()=>{
+  // bench: upper back is tertiary
+  eq(app("exConflict(exercises.find(e=>e.id==='bench'), {back:'sore'}).blocked"), false);
+  eq(app("exConflict(exercises.find(e=>e.id==='bench'), {back:'rest'}).blocked"), true);
+});
+test('safe alternative for DB bench with sore shoulders spares shoulders', ()=>{
+  const r = app("const a = safeAlternative(exercises.find(e=>e.id==='dbbench'), 'chestPress', [], {shoulders:'sore'}); a ? [a.id, exConflict(a,{shoulders:'sore'}).blocked] : null");
+  assert(r, 'expected an alternative'); eq(r[1], false, 'alternative should not be blocked');
+});
+
+group('Weight suggestions');
+test('repRange parsing', ()=>{
+  eq(app("[repRange('8–12'), repRange(10), repRange('12/leg'), repRange('40s')]"), [[8,12],[10,10],[12,12],[40,40]]);
+});
+test('readiness 5 / 4 / 3 / 2 / 1 behave as designed (earned lift)', ()=>{
+  const r = app(`const ex = Object.assign({}, exercises.find(e=>e.id==='dbbench'), { workingWeight:100, increment:5, progress:'up' });
+    const rx = { sets:3, reps:'8–12', rest:120 };
+    [5,4,3,2,1].map(n=>{ const s = suggestFor(ex, rx, n); return [s.weight, s.sets]; })`);
+  eq(r, [[110,3],[105,3],[100,3],[100,2],[90,2]]);
+});
+test('a Great-day jump is capped at ~10% on light weights', ()=>{
+  eq(app("suggestFor(Object.assign({}, exercises.find(e=>e.id==='dbbench'), { workingWeight:50, increment:5, progress:'up' }), {sets:3,reps:'8–12',rest:120}, 5).weight"), 55);
+});
+test('not-earned lift only goes up on a Great day', ()=>{
+  const r = app(`const ex = Object.assign({}, exercises.find(e=>e.id==='dbbench'), { workingWeight:50, increment:5, progress:'hold' });
+    [5,4,3].map(n=>suggestFor(ex, {sets:3,reps:'8–12',rest:120}, n).weight)`);
+  eq(r, [55,50,50]);
+});
+test('"too hard" backs off one step', ()=>{
+  eq(app("suggestFor(Object.assign({}, exercises.find(e=>e.id==='dbbench'), { workingWeight:50, increment:5, progress:'down' }), {sets:3,reps:'8–12',rest:120}, 3).weight"), 45);
+});
+test('double progression: hitting the top of the range earns an increase', ()=>{
+  const r = app(`const ex = Object.assign({}, exercises.find(e=>e.id==='dbbench'), { workingWeight:50 });
+    updateProgressAfter(ex, [{reps:12,weight:50},{reps:12,weight:50},{reps:12,weight:50}], {reps:'8–12'}, 'right', 3); const a = ex.progress;
+    updateProgressAfter(ex, [{reps:12,weight:50},{reps:9,weight:50}], {reps:'8–12'}, 'right', 3); const b = ex.progress;
+    updateProgressAfter(ex, [{reps:12,weight:50}], {reps:'8–12'}, 'hard', 3); [a, b, ex.progress]`);
+  eq(r, ['up','hold','down']);
+});
+test('a rough-day lighter session does not lower working weight', ()=>{
+  eq(app(`const ex = Object.assign({}, exercises.find(e=>e.id==='dbbench'), { workingWeight:50 });
+    updateProgressAfter(ex, [{reps:10,weight:45}], {reps:'8–12'}, 'right', 1); ex.workingWeight`), 50);
+});
+
+group('Plan generator');
+test('spaced days → full body; back-to-back days → rotating split; 4 days → upper/lower', ()=>{
+  eq(app("[chooseSplit([1,3,5]).name, chooseSplit([1,2,3]).name, chooseSplit([1,2,4,5]).name]"),
+     ['Full Body A / B / C', 'Push / Pull / Legs', 'Upper / Lower']);
+});
+test('every generated day has 3+ exercises and fits the time budget roughly', ()=>{
+  const r = app(`[30,45,60].map(m=>{ const p = buildProgram(Object.assign(defaultCoachDraft(), {goal:'hypertrophy', days:[1,3,5], minutes:m}));
+    return p.days.every(d=>d.lifts.length>=3) && p.days.every(d=>parseInt(d.duration.replace(/\\D/g,''),10) <= m + 15); })`);
+  eq(r, [true,true,true]);
+});
+test('"daily" biceps skips the day after biceps were trained', ()=>{
+  const n = app("buildProgram(Object.assign(defaultCoachDraft(), {goal:'hypertrophy', days:[1,2,4,5], targets:['biceps'], targetMode:'daily'})).notes.filter(x=>/biceps/.test(x)).length");
+  assert(n >= 1, 'expected at least one skipped-biceps note');
+});
+test('protected lower back removes deadlifts / RDLs from the plan', ()=>{
+  const ids = app("buildProgram(Object.assign(defaultCoachDraft(), {goal:'hypertrophy', days:[1,3,5], protect:['lowerback']})).days.flatMap(d=>d.lifts)");
+  ['deadlift','dbrdl','trapbardl','rackpull'].forEach(id=> assert(!ids.includes(id), id + ' should be excluded'));
+});
+
+group('Vacation circuit');
+test('4 rounds × 5 exercises with correct rests (~22 min)', ()=>{
+  eq(app("[buildVacPhases().length, buildVacPhases().filter(p=>p.type==='work').length, vacTotalSeconds()]"), [39, 20, 1300]);
+});
+
+group('Gamification');
+test('first time doing an exercise = sets×10 + 50 XP discovery', ()=>{
+  const r = app("const x = awardForLog(exercises.find(e=>e.id==='vup'), [{reps:10,weight:0},{reps:10,weight:0}]); [x.xp, x.firstTime]");
+  eq(r, [70, true]);
+});
+
+/* ================= RUNNER ================= */
+(async function run(){
+  await fresh();
+  let lastGroup = null;
+  const out = document.getElementById('out');
+  for(const t of tests){
+    if(t.group !== lastGroup){ const g = document.createElement('div'); g.className='group'; g.textContent = t.group; out.appendChild(g); lastGroup = t.group; }
+    const row = document.createElement('div');
+    try{ await t.fn(); row.className = 't ok'; row.textContent = t.name; results.push({ name:t.name, ok:true }); }
+    catch(e){ row.className = 't bad'; row.innerHTML = t.name + '<div class="err">' + String(e && e.message || e).replace(/</g,'&lt;') + '</div>'; results.push({ name:t.name, ok:false, error:String(e && e.message || e) }); }
+    out.appendChild(row);
+  }
+  clearTestStorage();
+  const failed = results.filter(r=>!r.ok).length;
+  const s = document.getElementById('summary');
+  s.className = failed ? 'fail' : 'pass';
+  s.textContent = failed ? `${failed} of ${results.length} tests failed` : `All ${results.length} tests passed`;
+  window.__testResults = { done:true, failed, total: results.length, results };
+})();
+</script>
+</body>
+</html>
