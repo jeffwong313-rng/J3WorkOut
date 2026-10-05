@@ -492,6 +492,33 @@
   .vac-live-ex{display:flex;flex-direction:column;align-items:center;text-align:center;max-width:260px;}
   .vac-cue{font-size:13px;font-weight:600;margin-top:8px;}
   .wk-cell.st-vacation{border-color:var(--core);border-style:dashed;opacity:.8;}
+
+  /* ---------- Muscle database & recovery ---------- */
+  .rec-chip.lvl-sore{border-color:var(--warn);background:rgba(255,206,84,.12);color:var(--warn);}
+  .rec-chip.lvl-rest{border-color:var(--danger);background:rgba(255,93,108,.12);color:var(--danger);}
+  .mtag{display:inline-block;font-size:10.5px;font-weight:700;border-radius:6px;padding:2px 6px;margin:1px 3px 1px 0;white-space:nowrap;}
+  .mtag.r-P{background:var(--accent);color:#07271b;}
+  .mtag.r-S{background:rgba(61,220,151,.22);color:var(--accent);}
+  .mtag.r-T{background:var(--bg-alt);color:var(--text-dim);border:1px solid var(--border);}
+  .mroles{margin-top:8px;display:grid;gap:4px;}
+  .mroles-row{display:flex;align-items:center;flex-wrap:wrap;gap:2px;}
+  .mroles-lbl{font-size:10.5px;font-weight:800;text-transform:uppercase;letter-spacing:.03em;color:var(--text-dim);width:74px;flex:0 0 auto;}
+  .mdb-wrap{max-height:540px;overflow:auto;border:1px solid var(--border);border-radius:10px;}
+  .mdb-table{min-width:860px;font-size:12.5px;}
+  .mdb-table thead th{position:sticky;top:0;background:var(--card);z-index:2;}
+  .mdb-table td:first-child,.mdb-table th:first-child{position:sticky;left:0;background:var(--card);z-index:1;box-shadow:1px 0 0 var(--border);}
+  .mdb-table thead th:first-child{z-index:3;}
+  .mdb-table td{vertical-align:top;}
+  .mdb-table tr.editing td{background:rgba(61,220,151,.06);}
+  .mdb-name{min-width:200px;font-weight:600;}
+  .mdb-editor td{background:var(--bg-alt);}
+  .mdb-chip{font-size:12px;padding:6px 10px;}
+  .mdb-chip.r-P{background:var(--accent);color:#07271b;border-color:var(--accent);}
+  .mdb-chip.r-S{background:rgba(61,220,151,.22);color:var(--accent);border-color:var(--accent-dim);}
+  .mdb-chip.r-T{border-color:var(--text-dim);color:var(--text);}
+  .mdb-src{font-size:10.5px;font-weight:700;border-radius:99px;padding:2px 7px;border:1px solid var(--border);color:var(--text-dim);}
+  .mdb-src.src-edited{color:var(--warn);border-color:var(--warn);}
+  .mdb-src.src-estimated{font-style:italic;}
 </style>
 </head>
 <body>
@@ -735,6 +762,12 @@
         <select id="settingsEquipmentFilter" onchange="renderSettingsExerciseList()"><option value="">All equipment</option></select>
       </div>
       <div id="settingsExerciseList" style="margin-top:14px;"></div>
+    </div>
+
+    <div class="card" style="margin-bottom:16px;">
+      <h2>Muscle Database</h2>
+      <div class="hint">The backend sheet behind every suggestion: which muscles each exercise works. <strong>Primary</strong> = main mover (100%), <strong>Secondary</strong> = assists (50%), <strong>Tertiary</strong> = stabilizes (25%). When you mark something sore, exercises that use it as primary or secondary are avoided; marked "rest/injured", anything that touches it is avoided. Tap ✎ to edit a row (great for exercises you add yourself) or export the sheet to Excel / Google Sheets.</div>
+      <div id="muscleDbBox"></div>
     </div>
 
     <div class="card" style="margin-bottom:16px;">
@@ -1654,24 +1687,41 @@ function renderPlanView(){
     const rinfo = ci ? READINESS_INFO[ci.readiness] : null;
     const readiness = todayReadiness();
     const briefRows = day.lifts.map(id=>{
-      const ex = exercises.find(e=>e.id===id); if(!ex) return '';
-      const rx = rxFor(ex, day); const sg = suggestFor(ex, rx, readiness);
-      return `<div class="bl-row"><span>${rx.emphasis?'<span style="color:var(--warn)">★</span> ':''}${ex.name}</span><span>${sg.sets} × ${rxRepsText(ex, rx)} @ ${fmtWeight(ex, sg.weight)} · rest ${fmtRest(rx.rest)}</span></div>`;
+      const si = stepExercise(plan, day, { exerciseId:id }); const ex = si.ex, rx = si.rx; if(!ex) return '';
+      const orig = exercises.find(e=>e.id===id);
+      if(si.skipped) return `<div class="bl-row"><span style="text-decoration:line-through;color:var(--text-dim)">${orig ? orig.name : id}</span><span style="color:var(--warn)">🛌 skipped — ${si.reason||'recovering'}</span></div>`;
+      const sg = suggestFor(ex, rx, readiness);
+      return `<div class="bl-row"><span>${rx.emphasis?'<span style="color:var(--warn)">★</span> ':''}${si.swapped ? `🩹 ${ex.name} <span style="color:var(--text-dim);font-size:11.5px;">(instead of ${orig?orig.name:id})</span>` : ex.name}</span><span>${sg.sets} × ${rxRepsText(ex, rx)} @ ${fmtWeight(ex, sg.weight)} · rest ${fmtRest(rx.rest)}</span></div>`;
     }).join('');
+    const flags = todayFlags();
+    const flagTxt = Object.entries(flags).map(([g,l])=> (l==='rest'?'🚫 ':'😣 ') + (recoveryGroup(g)?recoveryGroup(g).label.toLowerCase():g)).join(', ');
     inner += `${rinfo ? `<div class="coach-why" style="margin-top:0;margin-bottom:14px;border-left-color:${rinfo.color}"><strong style="color:${rinfo.color}">Readiness ${ci.readiness}/5 — ${rinfo.label}.</strong> ${rinfo.msg}</div>` : ''}
       <h2>Warm-up</h2>
       <div class="hint">${step.data.duration} — ${step.data.description}</div>
       <h2 style="margin-top:16px;">Today's plan <span style="color:var(--text-dim);font-weight:600;font-size:12px;">${day.duration||''}</span></h2>
       <div class="hint" style="margin-bottom:0;">Quick look so you can grab what you need and not waste time between exercises.</div>
+      ${flagTxt ? `<div class="coach-why warn" style="margin-top:10px;">🩹 Protecting: <strong>${flagTxt}</strong>. Exercises that would load these as a main or helper muscle were swapped or skipped. <a href="#" onclick="redoCheckin();return false;" style="color:var(--accent);">Redo check-in</a></div>` : (ci ? `<div class="hint" style="margin-top:6px;"><a href="#" onclick="redoCheckin();return false;" style="color:var(--accent);">Something sore? Redo check-in</a></div>` : '')}
       <div class="brief-list">${briefRows}</div>
       ${effortGuideHtml()}
       <div class="wizard-actions">
         <button class="btn" onclick="planAdvance()">Warm-up done →</button>
       </div>`;
+  } else if(step.type === 'exercise' && stepExercise(plan, day, step).skipped){
+    const si = stepExercise(plan, day, step); const orig = exercises.find(e=>e.id===si.origId);
+    inner += `<h2>🛌 Skipping ${orig ? orig.name : 'this exercise'} today</h2>
+      <div class="coach-why warn">It loads your <strong>${si.reason || 'recovering muscles'}</strong>, and there's no similar exercise that avoids it with your equipment. Resting it today means it comes back stronger.</div>
+      <div class="wizard-actions">
+        <button class="btn ghost" onclick="planBack()">← Back</button>
+        <button class="btn secondary" onclick="undoRecoverySwap('${si.origId}')">Do it anyway (light)</button>
+        <button class="btn" onclick="planAdvance()">Next →</button>
+      </div>`;
   } else if(step.type === 'exercise'){
-    const ex = exercises.find(e=>e.id===step.exerciseId);
+    const si = stepExercise(plan, day, step);
+    const ex = si.ex;
     if(!ex){ inner += '<div class="empty">Exercise missing — skipping.</div>'; planAdvance(); return; }
-    const rx = rxFor(ex, day);
+    const rx = si.rx;
+    const swapOrig = si.swapped ? exercises.find(e=>e.id===si.origId) : null;
+    const liveConflict = exConflict(ex);
     const sug = suggestFor(ex, rx, todayReadiness());
     const [repLo, repHi] = repRange(rx.reps);
     // Auto-set the rest timer to this exercise's prescribed rest (once per step, never mid-countdown).
@@ -1680,6 +1730,8 @@ function renderPlanView(){
     const wwLabel = ex.unit==='lb' ? 'My working weight (lb)' : (ex.unit==='reps' ? 'My usual reps per set' : 'My usual hold (sec)');
     inner += `<div class="flex-between" style="gap:10px;flex-wrap:wrap;"><div style="display:flex;align-items:center;gap:12px;">${iconBadge(ex)}<div><h2 style="margin-bottom:2px;">${rx.emphasis?'<span style="color:var(--warn)">★</span> ':''}${ex.name}</h2><div class="hint" style="margin-bottom:0;">${categoryLabel(ex.category)}${rx.emphasis?' · priority muscle':''}</div></div></div>
       <button class="btn ghost" style="flex:0 0 auto;" onclick="swapCurrentExercise()" title="Machine taken or don't like it? Swap for a similar exercise.">⇄ Swap</button></div>
+      ${swapOrig ? `<div class="coach-why warn">🩹 Swapped in for <strong>${swapOrig.name}</strong> today, which loads your ${si.reason}. This one trains the same area while sparing it. <a href="#" onclick="undoRecoverySwap('${si.origId}');return false;" style="color:var(--accent);">Use ${swapOrig.name} anyway</a></div>` : ''}
+      ${!swapOrig && liveConflict.hits.length ? `<div class="coach-why warn">⚠️ Heads up: this uses your ${liveConflict.hits.map(h=>`${h.level==='rest'?'resting':'sore'} ${h.label} (${h.role})`).join(', ')}. Go light and stop if anything hurts.</div>` : ''}
       <div class="wizard-top-row">
         ${movementPreviewHtml(ex)}
         <div class="rest-timer-box">
@@ -1721,6 +1773,7 @@ function renderPlanView(){
         <div class="row ww-row"><span>${wwLabel}</span><input type="number" step="any" id="wizardWorking" value="${ex.workingWeight!=null?ex.workingWeight:''}" placeholder="${workingWeight(ex)}"><button class="btn ghost" onclick="setWorkingWeightFromWizard('${ex.id}')">Update</button></div>
       </div>
       ${coachingHtml(ex)}
+      <details class="coach-box"><summary>💪 Muscles worked</summary>${muscleRolesHtml(ex)}</details>
       <div class="hint" style="margin-bottom:8px;">Log what you <strong>actually</strong> did.${ex.unit==='lb' && !ex.repsAreTime ? ` Hit <strong>${repHi} reps on every set</strong> with good form and you've earned a weight increase.` : ''} Rest timer is set to ${fmtRest(rx.rest)}.</div>
       <div id="wizardSetsContainer"></div>
       <button class="btn secondary" onclick="addWizardSetRow()" style="width:100%;margin-top:6px;">+ Add Set</button>
@@ -1777,10 +1830,10 @@ function renderPlanView(){
 
   detail.innerHTML = `<div class="card">${inner}</div>`;
 
-  if(step.type === 'exercise'){
-    const ex = exercises.find(e=>e.id===step.exerciseId);
+  if(step.type === 'exercise' && document.getElementById('wizardSetsContainer')){
+    const si = stepExercise(plan, day, step); const ex = si.ex;
     if(ex){
-      const rx = rxFor(ex, day);
+      const rx = si.rx;
       const sug = suggestFor(ex, rx, todayReadiness());
       document.getElementById('wizardSetsContainer').innerHTML = '';
       for(let i=0;i<sug.sets;i++) addWizardSetRow(ex, sug.weight, repRange(rx.reps)[0]);
@@ -1790,7 +1843,7 @@ function renderPlanView(){
 
   // "Did you know?" tip tied to this exercise (or a general one during warm-up).
   if(step.type === 'exercise'){
-    const tipEx = exercises.find(e=>e.id===step.exerciseId);
+    const tipEx = stepExercise(plan, day, step).ex;
     if(tipEx) maybeShowTip('plan', 'plan|' + plan.date + '|' + day.id + '|' + idx + '|' + tipEx.id, tipGroupsFor(tipEx));
   } else if(step.type === 'warmup' || step.type === 'finisher' || step.type === 'cardio'){
     maybeShowTip('plan', 'plan|' + plan.date + '|' + day.id + '|' + idx, generalTipGroups());
@@ -1807,8 +1860,9 @@ function addWizardSetRow(ex, target, repsDefault){
     const day = WORKOUT_DAYS.find(d=>d.id===plan.dayId);
     const steps = buildSteps(day);
     const step = steps[Math.min(plan.stepIndex, steps.length-1)];
-    ex = exercises.find(e=>e.id===step.exerciseId);
-    const rx = rxFor(ex, day);
+    const si = stepExercise(plan, day, step);
+    ex = si.ex;
+    const rx = si.rx;
     target = suggestFor(ex, rx, todayReadiness()).weight;
     repsDefault = repRange(rx.reps)[0];
   }
@@ -1837,7 +1891,8 @@ function wizardSaveExercise(){
   const day = WORKOUT_DAYS.find(d=>d.id===plan.dayId);
   const steps = buildSteps(day);
   const step = steps[Math.min(plan.stepIndex, steps.length-1)];
-  const ex = exercises.find(e=>e.id===step.exerciseId);
+  const si = stepExercise(plan, day, step);
+  const ex = si.ex;
   if(!ex) return;
   const rows = [...document.querySelectorAll('#wizardSetsContainer .set-row')];
   const sets = rows.map(row=>{
@@ -1848,7 +1903,7 @@ function wizardSaveExercise(){
     return { reps, weight };
   }).filter(s=> s.reps>0 || s.weight>0);
   if(sets.length===0){ showToast('Log at least one set, or use "Couldn\'t finish"'); return; }
-  const rx = rxFor(ex, day);
+  const rx = si.rx;
   const readiness = todayReadiness();
   const suggested = suggestFor(ex, rx, readiness).weight;
   const award = awardForLog(ex, sets);
@@ -2873,6 +2928,7 @@ function renderSettings(){
   buildSettingsFilterSelectsOnce();
   renderSettingsExerciseList();
   renderWorkoutDaysSettings();
+  renderMuscleDb();
 }
 
 function buildSettingsFilterSelectsOnce(){
@@ -3445,11 +3501,12 @@ function chooseSplit(daysIn){
   return best;
 }
 
+let _buildProtect = {}; // areas to protect while the program generator picks exercises
 function pickExercise(poolKey, variant, used, equip){
   const pool = SLOT_POOLS[poolKey];
   const lookup = id => exercises.find(e=>e.id===id);
-  let list = pool.ids.map(lookup).filter(ex=> ex && equip.includes(ex.equipment) && !used.has(ex.id));
-  if(!list.length) list = pool.ids.map(lookup).filter(ex=> ex && ex.equipment==='bodyweight' && !used.has(ex.id));
+  let list = pool.ids.map(lookup).filter(ex=> ex && equip.includes(ex.equipment) && !used.has(ex.id) && !exConflict(ex, _buildProtect).blocked);
+  if(!list.length) list = pool.ids.map(lookup).filter(ex=> ex && ex.equipment==='bodyweight' && !used.has(ex.id) && !exConflict(ex, _buildProtect).blocked);
   if(!list.length) return null;
   const v = pool.compound ? 0 : (variant||0); // keep the big lifts the same so you practice them; vary the small ones
   return list[v % list.length];
@@ -3458,6 +3515,7 @@ function pickExercise(poolKey, variant, used, equip){
 function buildProgram(a){
   const goal = COACH_GOALS[a.goal] || COACH_GOALS.hypertrophy;
   const exp = COACH_EXPERIENCE[a.experience] || COACH_EXPERIENCE.new;
+  _buildProtect = {}; (a.protect||[]).forEach(g=> _buildProtect[g] = 'sore');
   const split = chooseSplit(a.days);
   if(!split) return null;
   const days = split.days;
@@ -3644,23 +3702,34 @@ const READINESS_INFO = {
   2: { label:'Low',     color:'var(--accent2)', msg:'Lower energy: same weights, one fewer set per exercise. Showing up is the win today.' },
   1: { label:'Recover', color:'var(--danger)',  msg:'Rough day: ~10% lighter and one fewer set, focus on technique. If you feel sick or truly wrecked, a walk and an early night beats forcing it.' }
 };
-let checkinDraft = { feel:null, sleep:0, sore:0 };
+let checkinDraft = { feel:null, sleep:0, sore:0, recovering:{} };
 function computeReadiness(c){
   let score = c.feel;
+  // Marking a muscle sore/resting counts as "very sore" unless the soreness question already says so.
+  const flagged = c.recovering && Object.keys(c.recovering).length;
   if(c.sleep === -1) score -= 1; else if(c.sleep === 1) score += 0.5;
-  if(c.sore === -1) score -= 1;
+  if(c.sore === -1 || (flagged && c.sore === 0)) score -= 1;
   return clampNum(Math.round(score), 1, 5);
 }
 function setCheckin(field, v){ checkinDraft[field] = v; renderPlanView(); }
 function submitCheckin(skip){
   if(!skip && checkinDraft.feel == null){ showToast('Tap how you feel first'); return; }
-  const c = skip ? { feel:3, sleep:0, sore:0, skipped:true } : Object.assign({}, checkinDraft);
+  const c = skip ? { feel:3, sleep:0, sore:0, skipped:true, recovering:{} } : Object.assign({}, checkinDraft, { recovering: Object.assign({}, checkinDraft.recovering||{}) });
+  if(!skip && Object.values(c.recovering).some(v=>v==='sore') && c.sore === 0) c.sore = -1; // flagged soreness counts toward readiness
   c.readiness = computeReadiness(c);
   c.id = uid(); c.date = todayStr();
   const plan = loadTodayPlan(); c.dayId = plan && plan.dayId || null;
   checkins = checkins.filter(x=>x.date !== c.date).concat(c);
   saveAll();
-  checkinDraft = { feel:null, sleep:0, sore:0 };
+  checkinDraft = { feel:null, sleep:0, sore:0, recovering:{} };
+  // Swap/skip anything in today's workout that would load a sore or resting area.
+  const planDay = plan && plan.kind === 'lift' ? WORKOUT_DAYS.find(d=>d.id===plan.dayId) : null;
+  if(planDay){
+    const rs = computeRecoverySwaps(planDay);
+    saveTodayPlan({ swaps: rs.swaps, skips: rs.skips, swapReasons: rs.reasons });
+    const n = Object.keys(rs.swaps).length + rs.skips.length;
+    if(n) setTimeout(()=> showToast(`🩹 Adjusted ${n} exercise${n>1?'s':''} to protect what's sore`), 1500);
+  }
   showToast(skip ? 'Check-in skipped — using normal weights' : 'Checked in ✓ Readiness ' + c.readiness + '/5');
   renderPlanView(); renderDashboard();
 }
@@ -3677,6 +3746,8 @@ function renderCheckinHtml(day){
     <label>How do you feel going into this workout?</label>${seg('feel', FEEL_OPTIONS)}
     <label>Sleep last night</label>${seg('sleep', SLEEP_OPTIONS)}
     <label>Soreness in today's muscles</label>${seg('sore', SORE_OPTIONS)}
+    <label>Anything sore, tired or recovering? <span style="font-weight:500;">(optional)</span></label>
+    ${recoveryPickerHtml(checkinDraft.recovering || {}, 'setCheckinRecovery')}
     ${preview}
     <div class="wizard-actions">
       <button class="btn ghost" onclick="submitCheckin(true)">Skip check-in</button>
@@ -3870,6 +3941,8 @@ function swapCurrentExercise(){
   const oldId = step.exerciseId;
   const oldEx = exercises.find(e=>e.id===oldId);
   if(!oldEx) return;
+  if(plan.swaps && plan.swaps[oldId]){ const sw = Object.assign({}, plan.swaps); delete sw[oldId]; saveTodayPlan({ swaps: sw }); }
+  const flagsNow = todayFlags();
   const r = day.rx && day.rx[oldId];
   const equip = coachOn() && profile.coach.equipment && profile.coach.equipment.length ? profile.coach.equipment : EQUIPMENT_TYPES.map(e=>e.id);
   const order = (r && SLOT_POOLS[r.pool]) ? SLOT_POOLS[r.pool].ids : exercises.filter(e=>e.category===oldEx.category).map(e=>e.id);
@@ -3879,7 +3952,7 @@ function swapCurrentExercise(){
     const id = order[(start + k) % order.length];
     if(id === oldId || day.lifts.includes(id)) continue;
     const ex = exercises.find(e=>e.id===id);
-    if(ex && equip.includes(ex.equipment)){ newId = id; break; }
+    if(ex && equip.includes(ex.equipment) && !exConflict(ex, flagsNow).blocked){ newId = id; break; }
   }
   if(!newId){ showToast('No alternative available with your equipment'); return; }
   day.lifts = day.lifts.map(id=> id===oldId ? newId : id);
@@ -4016,7 +4089,7 @@ function defaultCoachDraft(){
   const c = profile.coach || {};
   return { name:c.name||'', experience:c.experience||'new', goal:c.goal||null, targets:(c.targets||[]).slice(),
     targetMode:c.targetMode||'twice', days:(c.days||[]).slice(), minutes:c.minutes||45,
-    equipment:(c.equipment||ALL_EQUIPMENT).slice(), bodyweight: profile.weight||'' };
+    equipment:(c.equipment||ALL_EQUIPMENT).slice(), bodyweight: profile.weight||'', protect:(c.protect||[]).slice() };
 }
 function startCoachSetup(){ coachDraft = defaultCoachDraft(); coachStep = 0; coachEditing = true; switchView('coach'); window.scrollTo(0,0); }
 function cancelCoachSetup(){ coachEditing = false; coachDraft = null; renderCoach(); }
@@ -4068,7 +4141,10 @@ function renderCoachQuestionnaire(){
       </div>
       <label>How much lifting experience do you have?</label>
       <div class="grid cols-3">${Object.entries(COACH_EXPERIENCE).map(([k,v])=>optCard(d.experience===k, v.label, v.sub, `coachSet('experience','${k}')`)).join('')}</div>
-      <div class="coach-why"><strong>What this means:</strong> ${e.implication}</div>`;
+      <div class="coach-why"><strong>What this means:</strong> ${e.implication}</div>
+      <label style="margin-top:16px;">Any areas to protect long-term? <span style="font-weight:500;">(old injury, cranky joint — optional)</span></label>
+      <div class="chip-row">${RECOVERY_GROUPS.map(g=>`<button class="chip rec-chip${(d.protect||[]).includes(g.id)?' lvl-sore':''}" onclick="coachToggleProtect('${g.id}')">${(d.protect||[]).includes(g.id)?'🩹 ':''}${g.label}</button>`).join('')}</div>
+      ${(d.protect||[]).length ? `<div class="coach-why warn">Your plan will skip exercises that use your <strong>${d.protect.map(g=>recoveryGroup(g).label.toLowerCase()).join(', ')}</strong> as a main or helper muscle (based on the muscle database in Settings). For real injuries, check with a doctor or physical therapist too.</div>` : ''}`;
   } else if(key === 'goal'){
     const g = d.goal && COACH_GOALS[d.goal];
     body = `<h2>What's your main goal?</h2>
@@ -4173,7 +4249,7 @@ function applyCoachPlan(){
   const prevBuilt = profile.coach && profile.coach.builtAt;
   profile.coach = {
     name:(a.name||'').trim(), experience:a.experience, goal:a.goal, targets:a.targets.slice(), targetMode:a.targetMode,
-    days:a.days.slice(), minutes:+a.minutes, equipment:a.equipment.slice(),
+    days:a.days.slice(), minutes:+a.minutes, equipment:a.equipment.slice(), protect:(a.protect||[]).slice(),
     schedule:Object.fromEntries(result.days.map(d=>[d.weekday, d.id])),
     splitName:result.split.name, notes:result.notes, builtAt: todayStr(), firstBuiltAt: (profile.coach && profile.coach.firstBuiltAt) || prevBuilt || todayStr()
   };
@@ -4719,11 +4795,16 @@ const FS_REGION_MAP = {
   quads:['quads'], hamstrings:['hamstrings'], glutes:['glutes'], calves:['calves'], core:['core'],
   conditioning:['quads','glutes','core','shoulders']
 };
+// Body-map regions for each database muscle.
+const MUSCLE_TO_REGION = { chest:'chest', fdelt:'shoulders', sdelt:'shoulders', rdelt:'shoulders', tri:'triceps', bi:'biceps', fore:'forearms',
+  lats:'lats', upback:'traps', lowback:'lowerback', abs:'core', obl:'core', hipflex:'quads', glutes:'glutes', abd:'glutes', add:'quads', quads:'quads', hams:'hamstrings', calves:'calves' };
 function exAnatomy(ex){
-  const ms = FACT_MUSCLE_BY_EX[ex.id] || [fsMuscleOf(ex)].filter(Boolean);
-  const primary = [...new Set(ms.flatMap(m=> FS_REGION_MAP[m] || []))];
-  const secondary = [...new Set(ms.flatMap(m=> FS_SECONDARY[m] || []))].filter(r=> !primary.includes(r));
-  return { primary, secondary, muscles: ms };
+  const m = exMuscles(ex);
+  const reg = list => [...new Set(list.map(k=>MUSCLE_TO_REGION[k]).filter(Boolean))];
+  const primary = reg(m.P);
+  const secondary = reg(m.S).filter(r=>!primary.includes(r));
+  const tertiary = reg(m.T).filter(r=>!primary.includes(r) && !secondary.includes(r));
+  return { primary, secondary, tertiary, muscles: m };
 }
 const REGION_LABEL = { chest:'Chest', shoulders:'Shoulders', biceps:'Biceps', triceps:'Triceps', forearms:'Forearms', core:'Abs & core', traps:'Upper back / traps', lats:'Lats', lowerback:'Lower back', glutes:'Glutes', quads:'Quads', hamstrings:'Hamstrings', calves:'Calves' };
 
@@ -4749,8 +4830,9 @@ function exStats(ex){
 }
 function pips(n, max){ let h=''; for(let i=1;i<=(max||5);i++) h += `<span class="pip${i<=n?' on':''}"></span>`; return h; }
 
-function bodyMapSvg(primary, secondary){
-  const fill = r => primary.includes(r) ? 'var(--accent)' : secondary.includes(r) ? 'rgba(61,220,151,.38)' : 'var(--bg-alt)';
+function bodyMapSvg(primary, secondary, tertiary){
+  tertiary = tertiary || [];
+  const fill = r => primary.includes(r) ? 'var(--accent)' : secondary.includes(r) ? 'rgba(61,220,151,.45)' : tertiary.includes(r) ? 'rgba(61,220,151,.18)' : 'var(--bg-alt)';
   const st = 'stroke="var(--border)" stroke-width="1.2"';
   const part = (r, shape) => shape.replace('/>', ` fill="${fill(r)}" ${st}><title>${REGION_LABEL[r]||r}</title></${shape.match(/^<(\w+)/)[1]}>`);
   const E = (r,cx,cy,rx,ry) => part(r, `<ellipse cx="${cx}" cy="${cy}" rx="${rx}" ry="${ry}"/>`);
@@ -4792,11 +4874,12 @@ function exStatCardHtml(ex, opts){
     <div class="ex-stat-h">${iconBadge(ex)}<div style="flex:1;min-width:0;"><div class="ex-stat-name">${escapeHtml(ex.name)}</div>
       <div class="hint" style="margin:0;">${equipmentLabel(ex.equipment)} · ${diffTxt}</div></div>${tag}</div>
     <div class="ex-stat-visuals">
-      <div class="ex-stat-map">${bodyMapSvg(an.primary, an.secondary)}
-        <div class="map-legend"><span><i style="background:var(--accent)"></i>Main</span><span><i style="background:rgba(61,220,151,.38)"></i>Helps</span></div></div>
+      <div class="ex-stat-map">${bodyMapSvg(an.primary, an.secondary, an.tertiary)}
+        <div class="map-legend"><span><i style="background:var(--accent)"></i>Primary</span><span><i style="background:rgba(61,220,151,.45)"></i>Secondary</span><span><i style="background:rgba(61,220,151,.18)"></i>Tertiary</span></div></div>
       ${!opts.compact && anim ? `<div class="ex-stat-anim"><div class="mp-figure">${anim.svg}</div><div class="hint" style="margin:4px 0 0;text-align:center;">${anim.title}</div></div>` : ''}
     </div>
-    <div class="ex-stat-works"><strong>Works:</strong> ${an.primary.map(r=>REGION_LABEL[r]).join(', ') || '—'}${an.secondary.length?` <span style="color:var(--text-dim)">· helps: ${an.secondary.map(r=>REGION_LABEL[r]).join(', ')}</span>`:''}</div>
+    ${muscleRolesHtml(ex)}
+    ${(()=>{ const c = exConflict(ex); return c.hits.length ? `<div class="hint" style="margin:6px 0 0;color:var(--warn);">⚠️ Touches your ${c.hits.map(h=>`${h.level==='rest'?'resting':'sore'} ${h.label} (${h.role})`).join(', ')} — go light.</div>` : ''; })()}
     <div class="ex-stat-bars">
       <div><span>Strength</span>${pips(s.strength)}</div>
       <div><span>Muscle</span>${pips(s.muscle)}</div>
@@ -4837,8 +4920,11 @@ function recoveringMuscles(){
 }
 function fsCandidates(muscle){
   const used = new Set((fs && fs.history || []).map(h=>h.exerciseId));
-  return exercises.filter(ex=> fsMuscleOf(ex) === muscle && fsEquip().includes(ex.equipment) && !used.has(ex.id));
+  const flags = todayFlags();
+  return exercises.filter(ex=> fsMuscleOf(ex) === muscle && fsEquip().includes(ex.equipment) && !used.has(ex.id) && !exConflict(ex, flags).blocked);
 }
+const FS_TO_RECOVERY = { chest:'chest', back:'back', shoulders:'shoulders', biceps:'biceps', triceps:'triceps', quads:'quads', hamstrings:'hamstrings', glutes:'glutes', calves:'calves', core:'core' };
+function fsMuscleFlag(m){ const g = FS_TO_RECOVERY[m]; return g ? todayFlags()[g] || null : null; }
 function fsRecommend(muscle, exclude){
   exclude = exclude || [];
   const mood = FS_MOODS[fs.mood] || FS_MOODS.muscle;
@@ -4846,6 +4932,7 @@ function fsRecommend(muscle, exclude){
   const scored = fsCandidates(muscle).filter(ex=>!exclude.includes(ex.id)).map(ex=>{
     const comp = isCompoundEx(ex);
     let s = Math.random()*2.2;
+    s -= exConflict(ex).score * 2; // prefer options that barely touch anything sore
     if(mood.preferCompound && comp) s += 3;
     if(mood.preferIso && !comp) s += 2;
     if(mood.preferCardio && (ex.category==='conditioning' || ex.category==='fullbody')) s += 3;
@@ -4862,7 +4949,8 @@ function fsRecommend(muscle, exclude){
 function fsPickNew(preferMuscle){
   const used = new Set((fs && fs.history || []).map(h=>h.exerciseId));
   const isNewbie = !profile.coach || profile.coach.experience === 'new';
-  let pool = exercises.filter(ex=> neverDone(ex) && !used.has(ex.id) && fsEquip().includes(ex.equipment) && fsMuscleOf(ex));
+  const flags = todayFlags();
+  let pool = exercises.filter(ex=> neverDone(ex) && !used.has(ex.id) && fsEquip().includes(ex.equipment) && fsMuscleOf(ex) && !exConflict(ex, flags).blocked);
   if(isNewbie){ const easy = pool.filter(ex=>exDifficulty(ex) <= 2); if(easy.length) pool = easy; }
   const rec = recoveringMuscles();
   const fresh = pool.filter(ex=> !rec.has(fsMuscleOf(ex)));
@@ -4874,14 +4962,15 @@ function fsPickNew(preferMuscle){
 function fsFarMuscle(current){
   const cur = fsMuscleDef(current);
   const rec = recoveringMuscles();
-  const opts = FS_MUSCLES.filter(m=> m.region !== (cur && cur.region) && !rec.has(m.id) && fsCandidates(m.id).length)
+  const opts = FS_MUSCLES.filter(m=> m.region !== (cur && cur.region) && !rec.has(m.id) && !fsMuscleFlag(m.id) && fsCandidates(m.id).length)
     .sort((a,b)=> fsSetsOn(a.id) - fsSetsOn(b.id) || Math.random() - .5);
   return opts.length ? opts[0].id : null;
 }
 
 /* ---------------- Actions ---------------- */
 function fsOpenSetup(){
-  fsSetup = { mood: (fs && fs.mood) || 'muscle', minutes: 30, energy: null, start: null };
+  const ci = todayCheckin();
+  fsSetup = { mood: (fs && fs.mood) || 'muscle', minutes: 30, energy: null, start: null, recovering: Object.assign({}, ci && ci.recovering || {}) };
   if(fs && fs.stage === 'done' && fs.date === todayStr()) fs = null;
   renderFreestyle();
   window.scrollTo(0,0);
@@ -4890,14 +4979,17 @@ function fsSetupSet(field, v){ fsSetup[field] = v; renderFreestyle(); }
 function fsBegin(){
   if(!todayCheckin() && fsSetup.energy == null){ showToast('Tap how you feel first'); return; }
   if(!todayCheckin()){
-    const c = { feel: fsSetup.energy, sleep:0, sore:0, id: uid(), date: todayStr(), dayId:'freestyle' };
+    const c = { feel: fsSetup.energy, sleep:0, sore:0, id: uid(), date: todayStr(), dayId:'freestyle', recovering: Object.assign({}, fsSetup.recovering||{}) };
+    if(Object.values(c.recovering).some(v=>v==='sore')) c.sore = -1;
     c.readiness = computeReadiness(c);
     checkins = checkins.filter(x=>x.date !== c.date).concat(c); saveAll();
+  } else {
+    const c = todayCheckin(); c.recovering = Object.assign({}, fsSetup.recovering||{}); saveAll();
   }
   let muscle = fsSetup.start;
   if(!muscle || muscle === 'surprise'){
     const rec = recoveringMuscles();
-    let pool = FS_MUSCLES.filter(m=> !rec.has(m.id));
+    let pool = FS_MUSCLES.filter(m=> !rec.has(m.id) && !fsMuscleFlag(m.id));
     if(fsSetup.mood === 'sweat') pool = pool.filter(m=>m.id==='conditioning'||m.region==='lower') ;
     muscle = pool.length ? pool[Math.floor(Math.random()*pool.length)].id : 'core';
   }
@@ -5042,7 +5134,8 @@ function fsHomeHtml(){
 function fsSetupHtml(){
   const s = fsSetup, rec = recoveringMuscles();
   const needEnergy = !todayCheckin();
-  const muscleChip = m => `<button class="chip${s.start===m.id?' active':''}${rec.has(m.id)?' recovering':''}" onclick="fsSetupSet('start','${m.id}')">${m.label}${rec.has(m.id)?' <span class="rec-tag">trained yesterday</span>':''}</button>`;
+  const flagOf = m => { const g = FS_TO_RECOVERY[m.id]; return g && s.recovering ? s.recovering[g] : null; };
+  const muscleChip = m => `<button class="chip${s.start===m.id?' active':''}${rec.has(m.id)||flagOf(m)?' recovering':''}" onclick="fsSetupSet('start','${m.id}')">${m.label}${flagOf(m)?` <span class="rec-tag">${flagOf(m)==='rest'?'resting':'sore'}</span>`:rec.has(m.id)?' <span class="rec-tag">trained yesterday</span>':''}</button>`;
   const groups = Object.entries(FS_REGIONS).map(([k,lbl])=>`<div class="fs-region"><div class="fs-region-h">${lbl}</div><div class="chip-row">${FS_MUSCLES.filter(m=>m.region===k).map(muscleChip).join('')}</div></div>`).join('');
   return `<div class="card">
     <h2>What are you in the mood for?</h2>
@@ -5053,6 +5146,8 @@ function fsSetupHtml(){
       <div class="seg-row">${FEEL_OPTIONS.map(o=>`<button class="seg-btn${s.energy===o.v?' active':''}" onclick="fsSetupSet('energy',${o.v})"><span class="seg-emoji">${o.e}</span>${o.l}</button>`).join('')}</div>
       <div class="hint" style="margin-top:6px;">Sets today's weights — the better you feel, the more you'll lift.</div>`
       : `<div class="coach-why">Using today's check-in: readiness <strong>${todayCheckin().readiness}/5</strong>.</div>`}
+    <label style="margin-top:16px;">Anything sore, tired or recovering?</label>
+    ${recoveryPickerHtml(s.recovering || {}, 'setFsRecovery')}
     <label style="margin-top:16px;">Where do you want to start?</label>
     ${groups}
     <div class="chip-row" style="margin-top:10px;"><button class="chip${(!s.start||s.start==='surprise')?' active':''}" onclick="fsSetupSet('start','surprise')">🎲 Surprise me</button></div>
@@ -5155,7 +5250,7 @@ function fsPathHtml(){
   const timeUp = fsElapsedMin() >= fs.minutes;
   const rec = recoveringMuscles();
   const choice = (emoji, title, sub, onclick, cls) => `<div class="day-card path-card${cls?' '+cls:''}" onclick="${onclick}"><div class="day-title">${emoji} ${title}</div><div class="day-sub">${sub}</div></div>`;
-  const more = fsCandidates(m).length;
+  const more = fsMuscleFlag(m) ? 0 : fsCandidates(m).length;
   const cards = [];
   if(more){
     cards.push(setsHere >= FS_SET_CAP
@@ -5163,7 +5258,7 @@ function fsPathHtml(){
       : choice('🔁', `Keep going: more ${def.label.toLowerCase()}`, `${setsHere} sets so far — up to ~${FS_SET_CAP} hard sets per session is still productive. Hit it from a different angle.`, `fsGoMuscle('${m}')`));
   }
   (FS_NEIGHBORS[m]||[]).forEach(n=>{
-    const nd = fsMuscleDef(n); if(!nd || !fsCandidates(n).length) return;
+    const nd = fsMuscleDef(n); if(!nd || fsMuscleFlag(n) || !fsCandidates(n).length) return;
     const why = FS_WHY[m+'>'+n] || 'Same area of the body, different muscle — the one you just worked gets a breather.';
     cards.push(choice('↔️', `Switch to ${nd.label.toLowerCase()}`, (rec.has(n)?'<span style="color:var(--warn)">Trained yesterday — go light.</span> ':'') + why, `fsGoMuscle('${n}')`));
   });
@@ -5480,6 +5575,411 @@ function vacDoneHtml(){
       <button class="btn" onclick="vacReset(); switchView('dashboard')">Dashboard</button>
     </div>
   </div>`;
+}
+
+/* =====================================================================
+   MUSCLE DATABASE — primary / secondary / tertiary involvement
+   The "backend" table behind recovery-aware suggestions.
+     Primary   = main mover            (load 1.0)
+     Secondary = assists the movement  (load 0.5)
+     Tertiary  = stabilizes / minor    (load 0.25)
+   Defaults live in MUSCLE_DB below; edits made in Settings → Muscle
+   Database are stored on the exercise itself (ex.muscles) and win.
+   Format: 'P:muscle,muscle|S:...|T:...'
+   ===================================================================== */
+const MUSCLES = {
+  chest:  { label:'Chest',              short:'Chest' },
+  fdelt:  { label:'Front delts',        short:'Front delt' },
+  sdelt:  { label:'Side delts',         short:'Side delt' },
+  rdelt:  { label:'Rear delts',         short:'Rear delt' },
+  tri:    { label:'Triceps',            short:'Triceps' },
+  bi:     { label:'Biceps',             short:'Biceps' },
+  fore:   { label:'Forearms & grip',    short:'Forearms' },
+  lats:   { label:'Lats',               short:'Lats' },
+  upback: { label:'Upper back & traps', short:'Upper back' },
+  lowback:{ label:'Lower back',         short:'Low back' },
+  abs:    { label:'Abs',                short:'Abs' },
+  obl:    { label:'Obliques',           short:'Obliques' },
+  hipflex:{ label:'Hip flexors',        short:'Hip flexors' },
+  glutes: { label:'Glutes',             short:'Glutes' },
+  abd:    { label:'Outer hip (glute med)', short:'Outer hip' },
+  add:    { label:'Inner thigh (adductors)', short:'Adductors' },
+  quads:  { label:'Quads',              short:'Quads' },
+  hams:   { label:'Hamstrings',         short:'Hamstrings' },
+  calves: { label:'Calves',             short:'Calves' }
+};
+const MUSCLE_KEYS = Object.keys(MUSCLES);
+const ROLE_LOAD = { P:1, S:0.5, T:0.25 };
+const ROLE_LABEL = { P:'Primary', S:'Secondary', T:'Tertiary' };
+
+const MUSCLE_DB = {
+  // Legs — compound
+  squat:'P:quads,glutes|S:add,lowback,hams|T:abs,calves',
+  deadlift:'P:hams,glutes,lowback|S:quads,upback,fore,lats|T:abs,add',
+  legpress:'P:quads,glutes|S:add,hams|T:calves',
+  gobletsquat:'P:quads,glutes|S:add,abs|T:upback,fore',
+  frontsquat:'P:quads|S:glutes,abs,upback|T:add,lowback',
+  sumodeadlift:'P:glutes,hams,add|S:quads,lowback,upback|T:fore,abs',
+  trapbardl:'P:quads,glutes,hams|S:lowback,upback,fore|T:abs,lats',
+  speediancesquat:'P:quads,glutes|S:add,hams|T:abs,lowback',
+  bulgariansplitsquat:'P:quads,glutes|S:add,hams,abd|T:abs,calves',
+  hacksquat:'P:quads|S:glutes,add|T:hams,calves',
+  'speedianceleg press':'P:quads,glutes|S:add,hams|T:calves',
+  bwsquat:'P:quads,glutes|S:add|T:hams,calves,abs',
+  stepup:'P:quads,glutes|S:hams,abd|T:calves,abs',
+  lunge:'P:quads,glutes|S:hams,add|T:calves,abs',
+  // Legs — isolation
+  calfraise:'P:calves', standingcalfraise:'P:calves', dbcalfraise:'P:calves|T:fore', seatedcalfraise:'P:calves',
+  legextension:'P:quads', speedianceextension:'P:quads',
+  lyinglegcurl:'P:hams|T:calves', seatedlegcurl:'P:hams|T:calves', speediancelegcurl:'P:hams|T:calves',
+  adductor:'P:add', abductor:'P:abd|S:glutes',
+  // Glutes
+  dbrdl:'P:hams,glutes|S:lowback|T:fore,upback',
+  hipthrust:'P:glutes|S:hams|T:quads,add,abs', speediancehipthrust:'P:glutes|S:hams|T:quads,add,abs',
+  glutebridge:'P:glutes|S:hams|T:abs',
+  cablekickback:'P:glutes|S:hams|T:lowback', speedianceglutekickback:'P:glutes|S:hams|T:lowback',
+  curtsylunge:'P:glutes,quads|S:abd,add|T:calves',
+  singlelegbridge:'P:glutes|S:hams|T:abd,abs',
+  sumosquat:'P:quads,glutes,add|S:hams|T:fore,abs',
+  donkeykick:'P:glutes|S:hams|T:abs',
+  // Chest
+  bench:'P:chest|S:tri,fdelt|T:upback',
+  pushup:'P:chest|S:tri,fdelt|T:abs',
+  chestpress_speed:'P:chest|S:tri,fdelt', machinechestpress:'P:chest|S:tri,fdelt',
+  dbbench:'P:chest|S:tri,fdelt|T:fore',
+  cablefly_speed:'P:chest|S:fdelt|T:bi', pecdeck:'P:chest|S:fdelt', dbfly:'P:chest|S:fdelt|T:bi', speediancefly:'P:chest|S:fdelt|T:bi',
+  inclinedbpress:'P:chest,fdelt|S:tri|T:upback', inclinebarbell:'P:chest,fdelt|S:tri|T:upback', speedianceinclinepress:'P:chest,fdelt|S:tri',
+  declinebench:'P:chest|S:tri|T:fdelt',
+  chestdip:'P:chest,tri|S:fdelt|T:abs',
+  landminepress:'P:fdelt,chest|S:tri|T:abs,obl',
+  // Back
+  row:'P:lats,upback|S:bi,rdelt,lowback|T:fore,hams',
+  latpull:'P:lats|S:bi,upback|T:rdelt,fore', speediancepulldown:'P:lats|S:bi,upback|T:rdelt,fore', widegriplatpulldown:'P:lats|S:bi,upback|T:rdelt,fore',
+  dbbentrow:'P:lats,upback|S:bi,rdelt|T:fore,lowback',
+  facepull:'P:rdelt,upback|T:bi',
+  pullup:'P:lats|S:bi,upback|T:fore,abs',
+  chinup:'P:lats,bi|S:upback|T:fore,abs',
+  tbarrow:'P:upback,lats|S:bi,rdelt,lowback|T:fore,hams',
+  singlearmrow:'P:lats|S:upback,bi,rdelt|T:fore,obl',
+  cablerowwide:'P:upback,rdelt|S:lats,bi|T:fore',
+  seatedrow_speed:'P:lats,upback|S:bi,rdelt|T:fore',
+  straightarmpulldown:'P:lats|S:tri|T:abs',
+  speediancebentoverrow:'P:lats,upback|S:bi,rdelt,lowback|T:fore',
+  invertedrow:'P:upback,lats|S:bi,rdelt|T:abs,glutes',
+  rackpull:'P:upback,glutes,lowback|S:hams,fore,lats|T:quads',
+  bandpullapart:'P:rdelt,upback',
+  // Shoulders
+  ohp:'P:fdelt|S:tri,sdelt,upback|T:abs,lowback', militarypress:'P:fdelt|S:tri,sdelt,upback|T:abs,lowback',
+  dbshoulder:'P:fdelt|S:tri,sdelt|T:upback', speedianceshoulderpress:'P:fdelt|S:tri,sdelt|T:upback', machineshoulderpress:'P:fdelt|S:tri,sdelt',
+  arnoldpress:'P:fdelt,sdelt|S:tri|T:upback',
+  lateralraise:'P:sdelt|S:upback|T:fdelt', cablelateralraise:'P:sdelt|S:upback|T:fdelt', speediancelateralraise:'P:sdelt|S:upback|T:fdelt',
+  frontraise:'P:fdelt|S:sdelt|T:chest',
+  reardeltfly:'P:rdelt|S:upback',
+  uprightrow:'P:sdelt,upback|S:fdelt,bi|T:fore',
+  // Biceps
+  curl:'P:bi|S:fore', barbellcurl:'P:bi|S:fore|T:fdelt', preachercurl:'P:bi|S:fore', concentrationcurl:'P:bi|S:fore',
+  cablecurl:'P:bi|S:fore', speediancecurl:'P:bi|S:fore', inclinedbcurl:'P:bi|S:fore', ezbarcurl:'P:bi|S:fore',
+  hammercurl:'P:bi,fore', zottmancurl:'P:bi,fore',
+  // Triceps
+  tricepspushdown:'P:tri', ropepushdown:'P:tri', skullcrusher:'P:tri|T:lats',
+  overheadtricepext:'P:tri|T:abs', speediancetricepext:'P:tri|T:abs',
+  tricepkickback:'P:tri|T:rdelt', speedianceTricepkickback:'P:tri|T:rdelt',
+  closegripbench:'P:tri,chest|S:fdelt',
+  tricepdip:'P:tri|S:fdelt,chest',
+  // Core
+  plank:'P:abs|S:obl|T:glutes,fdelt',
+  russiantwist:'P:obl|S:abs|T:hipflex',
+  hanginglegraise:'P:abs,hipflex|S:obl|T:fore,lats',
+  cablewoodchopper:'P:obl|S:abs|T:fdelt,glutes', speediancewoodchopper:'P:obl|S:abs|T:fdelt,glutes',
+  abwheel:'P:abs|S:lats,obl|T:tri,hipflex',
+  bicyclecrunch:'P:abs,obl|S:hipflex',
+  sideplank:'P:obl|S:abs,abd|T:sdelt',
+  vup:'P:abs|S:hipflex|T:obl',
+  cablecrunch:'P:abs|S:obl',
+  deadbug:'P:abs|S:hipflex,obl',
+  // Full body
+  squattopress:'P:quads,fdelt|S:glutes,tri|T:abs,upback',
+  renegaderow:'P:lats,abs|S:upback,bi,obl|T:tri,chest',
+  cleanandpress:'P:glutes,hams,fdelt|S:quads,upback,tri,lowback|T:fore,abs,calves',
+  thruster:'P:quads,fdelt|S:glutes,tri|T:abs,upback', speedthruster:'P:quads,fdelt|S:glutes,tri|T:abs,upback',
+  manmaker:'P:chest,lats,quads|S:fdelt,tri,glutes,abs|T:bi,upback',
+  turkishgetup:'P:abs,fdelt|S:obl,glutes,tri|T:quads,upback',
+  wallball:'P:quads,fdelt|S:glutes,tri|T:abs',
+  devilspress:'P:glutes,hams,fdelt|S:chest,tri,quads|T:abs,upback',
+  bearcrawl:'P:abs,fdelt|S:quads,tri|T:hipflex',
+  burpee:'P:quads,chest|S:glutes,tri,fdelt|T:abs,calves',
+  plateoverhead:'P:glutes,fdelt|S:hams,quads,upback|T:abs',
+  // Conditioning
+  kbswing:'P:glutes,hams|S:lowback,abs|T:fdelt,fore',
+  mtnclimbers:'P:abs,hipflex|S:fdelt,quads|T:tri',
+  jumprope:'P:calves|S:quads|T:fdelt,fore',
+  treadmillsprint:'P:quads,glutes|S:hams,calves|T:hipflex,abs',
+  rowmachinecal:'P:lats,quads|S:upback,glutes,hams|T:bi,abs',
+  assaultbike:'P:quads|S:glutes,fdelt,hams|T:tri,lats',
+  battleropes:'P:fdelt|S:abs,fore|T:sdelt',
+  boxjump:'P:quads,glutes|S:calves,hams',
+  sledpush:'P:quads,glutes|S:calves,fdelt|T:tri',
+  highknees:'P:hipflex,quads|S:calves|T:abs',
+  jumpingjacks:'P:calves|S:abd,add,sdelt',
+  speedianceconditioning:'P:quads|S:glutes,fdelt|T:abs'
+};
+// Fallback for exercises with no entry (e.g. ones you added yourself).
+const CATEGORY_DEFAULT_MUSCLES = {
+  'legs-compound':'P:quads,glutes|S:hams,add|T:abs', 'legs-isolation':'P:quads', glutes:'P:glutes|S:hams',
+  chest:'P:chest|S:tri,fdelt', back:'P:lats,upback|S:bi,rdelt', shoulders:'P:fdelt,sdelt|S:tri', biceps:'P:bi|S:fore',
+  triceps:'P:tri', core:'P:abs|S:obl', fullbody:'P:quads,glutes,fdelt|S:abs,chest,lats', conditioning:'P:quads|S:glutes,calves|T:abs'
+};
+function parseMuscleSpec(spec){
+  const out = { P:[], S:[], T:[] };
+  String(spec||'').split('|').forEach(part=>{
+    const m = part.match(/^([PST]):(.*)$/); if(!m) return;
+    out[m[1]] = m[2].split(',').map(x=>x.trim()).filter(x=>MUSCLES[x]);
+  });
+  return out;
+}
+function specFromMuscles(m){ return ['P','S','T'].filter(r=>m[r] && m[r].length).map(r=>r+':'+m[r].join(',')).join('|'); }
+function exMuscles(ex){
+  if(ex.muscles && (ex.muscles.P||ex.muscles.S||ex.muscles.T)) return { P:ex.muscles.P||[], S:ex.muscles.S||[], T:ex.muscles.T||[] };
+  return parseMuscleSpec(MUSCLE_DB[ex.id] || CATEGORY_DEFAULT_MUSCLES[ex.category] || '');
+}
+function exMuscleSource(ex){ return ex.muscles ? 'edited' : (MUSCLE_DB[ex.id] ? 'database' : 'estimated'); }
+// How hard an exercise loads a single muscle: 1 / 0.5 / 0.25 / 0.
+function muscleLoad(ex, muscle){
+  const m = exMuscles(ex);
+  return m.P.includes(muscle) ? 1 : m.S.includes(muscle) ? 0.5 : m.T.includes(muscle) ? 0.25 : 0;
+}
+
+/* ---------------- Recovery groups (what you tap when something's sore) ---------------- */
+const RECOVERY_GROUPS = [
+  { id:'chest',      label:'Chest',              muscles:['chest'] },
+  { id:'shoulders',  label:'Shoulders',          muscles:['fdelt','sdelt','rdelt'] },
+  { id:'back',       label:'Upper back / lats',  muscles:['lats','upback'] },
+  { id:'lowerback',  label:'Lower back',         muscles:['lowback'] },
+  { id:'biceps',     label:'Biceps',             muscles:['bi'] },
+  { id:'triceps',    label:'Triceps',            muscles:['tri'] },
+  { id:'forearms',   label:'Forearms / wrists',  muscles:['fore'] },
+  { id:'core',       label:'Core / abs',         muscles:['abs','obl'] },
+  { id:'hips',       label:'Hips / groin',       muscles:['hipflex','add','abd'] },
+  { id:'glutes',     label:'Glutes',             muscles:['glutes'] },
+  { id:'quads',      label:'Quads / knees',      muscles:['quads'] },
+  { id:'hamstrings', label:'Hamstrings',         muscles:['hams'] },
+  { id:'calves',     label:'Calves / ankles',    muscles:['calves'] }
+];
+function recoveryGroup(id){ return RECOVERY_GROUPS.find(g=>g.id===id); }
+function groupLoad(ex, groupId){
+  const g = recoveryGroup(groupId); if(!g) return 0;
+  return Math.max(0, ...g.muscles.map(m=>muscleLoad(ex, m)));
+}
+// Today's flags: from the check-in ('sore' or 'rest') plus long-term protected areas ('sore' level).
+function todayFlags(){
+  const flags = {};
+  ((profile.coach && profile.coach.protect) || []).forEach(g=> flags[g] = 'sore');
+  const c = todayCheckin();
+  if(c && c.recovering) Object.entries(c.recovering).forEach(([g,lvl])=>{ if(lvl === 'rest' || !flags[g]) flags[g] = lvl; });
+  return flags;
+}
+// Does an exercise clash with the flags? sore → avoid as primary or secondary; rest → avoid entirely.
+function exConflict(ex, flags){
+  flags = flags || todayFlags();
+  const hits = [];
+  Object.entries(flags).forEach(([g,lvl])=>{
+    const load = groupLoad(ex, g);
+    if(!load) return;
+    const blocked = lvl === 'rest' ? load > 0 : load >= 0.5;
+    hits.push({ group:g, label: recoveryGroup(g) ? recoveryGroup(g).label.toLowerCase() : g, level:lvl, load, blocked,
+      role: load >= 1 ? 'primary' : load >= 0.5 ? 'secondary' : 'tertiary' });
+  });
+  return { blocked: hits.some(h=>h.blocked), hits, score: hits.reduce((s,h)=> s + h.load * (h.level==='rest'?2:1), 0) };
+}
+function conflictText(c){
+  const b = c.hits.filter(h=>h.blocked);
+  return b.map(h=>`${h.level==='rest'?'resting':'sore'} ${h.label} (${h.role})`).join(', ');
+}
+// Find a safe replacement: same slot pool first, then same muscle family, lowest overlap with flags.
+function safeAlternative(ex, rxPool, exclude, flags){
+  flags = flags || todayFlags();
+  const equip = (coachOn() && profile.coach.equipment && profile.coach.equipment.length) ? profile.coach.equipment : EQUIPMENT_TYPES.map(e=>e.id);
+  const fam = typeof fsMuscleOf === 'function' ? fsMuscleOf(ex) : null;
+  const pools = [];
+  if(rxPool && SLOT_POOLS[rxPool]) pools.push(SLOT_POOLS[rxPool].ids.map(id=>exercises.find(e=>e.id===id)).filter(Boolean));
+  if(fam) pools.push(exercises.filter(e=>fsMuscleOf(e)===fam));
+  for(const pool of pools){
+    const ok = pool.filter(e=> e.id!==ex.id && !exclude.includes(e.id) && equip.includes(e.equipment) && !exConflict(e, flags).blocked)
+      .sort((a,b)=> exConflict(a, flags).score - exConflict(b, flags).score);
+    if(ok.length) return ok[0];
+  }
+  return null;
+}
+
+/* ---------------- Recovery picker (chips: off → sore → rest) ---------------- */
+function recoveryPickerHtml(state, setter){
+  return `<div class="chip-row">${RECOVERY_GROUPS.map(g=>{
+    const lvl = state[g.id];
+    return `<button class="chip rec-chip${lvl?' lvl-'+lvl:''}" onclick="${setter}('${g.id}')">${lvl==='rest'?'🚫 ':lvl==='sore'?'😣 ':''}${g.label}</button>`;
+  }).join('')}</div>
+  <div class="hint" style="margin-top:6px;">Tap once = <strong>😣 sore</strong> (I'll avoid exercises where it's a main or helper muscle). Tap twice = <strong>🚫 rest / injured</strong> (avoid anything that uses it). Tap again to clear.</div>`;
+}
+function cycleLevel(cur){ return !cur ? 'sore' : cur === 'sore' ? 'rest' : null; }
+function setCheckinRecovery(g){
+  checkinDraft.recovering = checkinDraft.recovering || {};
+  const n = cycleLevel(checkinDraft.recovering[g]);
+  if(n) checkinDraft.recovering[g] = n; else delete checkinDraft.recovering[g];
+  renderPlanView();
+}
+function setFsRecovery(g){
+  fsSetup.recovering = fsSetup.recovering || {};
+  const n = cycleLevel(fsSetup.recovering[g]);
+  if(n) fsSetup.recovering[g] = n; else delete fsSetup.recovering[g];
+  renderFreestyle();
+}
+function coachToggleProtect(g){
+  coachDraft.protect = coachDraft.protect || [];
+  coachToggle('protect', g);
+}
+
+/* ---------------- Plan: today's recovery swaps ---------------- */
+// After check-in, swap (or skip) any exercise in today's workout that clashes with a sore/resting area.
+function computeRecoverySwaps(day){
+  const flags = todayFlags();
+  const swaps = {}, skips = [], reasons = {};
+  if(!Object.keys(flags).length) return { swaps, skips, reasons };
+  const inDay = day.lifts.slice();
+  day.lifts.forEach(id=>{
+    const ex = exercises.find(e=>e.id===id); if(!ex) return;
+    const c = exConflict(ex, flags);
+    if(!c.blocked) return;
+    const rx = day.rx && day.rx[id];
+    const alt = safeAlternative(ex, rx && rx.pool, inDay.concat(Object.values(swaps)), flags);
+    reasons[id] = conflictText(c);
+    if(alt) swaps[id] = alt.id; else skips.push(id);
+  });
+  return { swaps, skips, reasons };
+}
+function stepExercise(plan, day, step){
+  const origId = step.exerciseId;
+  const swapId = plan && plan.swaps && plan.swaps[origId];
+  const ex = exercises.find(e=>e.id===(swapId || origId));
+  const r = day && day.rx && day.rx[origId];
+  const rx = r ? r : (ex ? rxFor(ex, day) : null);
+  return { ex, rx, origId, swapped: !!swapId, skipped: !!(plan && plan.skips && plan.skips.includes(origId)),
+    reason: plan && plan.swapReasons ? plan.swapReasons[origId] : null };
+}
+function undoRecoverySwap(origId){
+  const plan = loadTodayPlan(); if(!plan) return;
+  const swaps = Object.assign({}, plan.swaps); delete swaps[origId];
+  const skips = (plan.skips||[]).filter(x=>x!==origId);
+  saveTodayPlan({ swaps, skips });
+  renderPlanView(); showToast('Using the original exercise — go light and stop if it hurts');
+}
+function redoCheckin(){
+  checkins = checkins.filter(c=>c.date !== todayStr()); saveAll();
+  saveTodayPlan({ stepIndex:0, swaps:{}, skips:[], swapReasons:{} });
+  renderPlanView();
+}
+
+/* ---------------- Settings: spreadsheet view ---------------- */
+let mdbFilter = { q:'', muscle:'', role:'' };
+let mdbEditing = null; // exercise id being edited
+let mdbDraft = null;   // {muscle: 'P'|'S'|'T'}
+function mdbTag(m, r){ return `<span class="mtag r-${r}" title="${ROLE_LABEL[r]} · ${MUSCLES[m].label}">${MUSCLES[m].short}</span>`; }
+function renderMuscleDb(){
+  const box = document.getElementById('muscleDbBox'); if(!box) return;
+  const q = mdbFilter.q.toLowerCase();
+  const rows = exercises.filter(ex=>{
+    if(q && !ex.name.toLowerCase().includes(q)) return false;
+    if(mdbFilter.muscle){
+      const m = exMuscles(ex);
+      const roles = mdbFilter.role ? [mdbFilter.role] : ['P','S','T'];
+      if(!roles.some(r=> m[r].includes(mdbFilter.muscle))) return false;
+    }
+    return true;
+  });
+  const body = rows.map(ex=>{
+    const m = exMuscles(ex), src = exMuscleSource(ex);
+    const editing = mdbEditing === ex.id;
+    const row = `<tr class="${editing?'editing':''}">
+      <td class="mdb-name"><div style="display:flex;align-items:center;gap:8px;">${iconBadge(ex,'sm')}<span>${escapeHtml(ex.name)}</span></div></td>
+      <td>${categoryLabel(ex.category)}</td><td>${equipmentLabel(ex.equipment)}</td>
+      <td>${m.P.map(x=>mdbTag(x,'P')).join('') || '—'}</td>
+      <td>${m.S.map(x=>mdbTag(x,'S')).join('') || '—'}</td>
+      <td>${m.T.map(x=>mdbTag(x,'T')).join('') || '—'}</td>
+      <td><span class="mdb-src src-${src}">${src}</span></td>
+      <td><button class="icon-btn" onclick="mdbEdit('${ex.id}')" title="Edit muscles">✎</button></td>
+    </tr>`;
+    if(!editing) return row;
+    const chips = MUSCLE_KEYS.map(k=>{ const r = mdbDraft[k]; return `<button class="chip mdb-chip${r?' r-'+r:''}" onclick="mdbCycle('${k}')">${r?r+' · ':''}${MUSCLES[k].label}</button>`; }).join('');
+    return row + `<tr class="mdb-editor"><td colspan="8">
+      <div class="hint" style="margin-bottom:6px;">Tap a muscle to cycle: <strong>P</strong>rimary → <strong>S</strong>econdary → <strong>T</strong>ertiary → off.</div>
+      <div class="chip-row">${chips}</div>
+      <div class="wizard-actions">
+        ${ex.muscles ? `<button class="btn ghost" onclick="mdbReset('${ex.id}')">Reset to default</button>` : ''}
+        <button class="btn secondary" onclick="mdbEditing=null; renderMuscleDb();">Cancel</button>
+        <button class="btn" onclick="mdbSave('${ex.id}')">Save</button>
+      </div></td></tr>`;
+  }).join('');
+  box.innerHTML = `
+    <div class="row" style="flex-wrap:wrap;gap:8px;">
+      <input type="text" placeholder="Search exercises…" value="${escapeHtml(mdbFilter.q)}" oninput="mdbFilter.q=this.value; clearTimeout(window._mdbT); window._mdbT=setTimeout(renderMuscleDbKeepFocus,200);" id="mdbSearch" style="flex:2 1 180px;">
+      <select onchange="mdbFilter.muscle=this.value; renderMuscleDb();" style="flex:1 1 150px;"><option value="">Any muscle</option>${MUSCLE_KEYS.map(k=>`<option value="${k}"${mdbFilter.muscle===k?' selected':''}>${MUSCLES[k].label}</option>`).join('')}</select>
+      <select onchange="mdbFilter.role=this.value; renderMuscleDb();" style="flex:1 1 120px;"><option value="">Any role</option>${['P','S','T'].map(r=>`<option value="${r}"${mdbFilter.role===r?' selected':''}>${ROLE_LABEL[r]}</option>`).join('')}</select>
+      <button class="btn secondary" style="flex:0 0 auto;" onclick="exportMuscleDbCsv()">⬇ CSV</button>
+    </div>
+    <div class="hint" style="margin:8px 0;">${rows.length} of ${exercises.length} exercises</div>
+    <div class="mdb-wrap"><table class="mdb-table">
+      <thead><tr><th>Exercise</th><th>Category</th><th>Equipment</th><th>Primary (100%)</th><th>Secondary (50%)</th><th>Tertiary (25%)</th><th>Source</th><th></th></tr></thead>
+      <tbody>${body || '<tr><td colspan="8" class="empty">No exercises match.</td></tr>'}</tbody>
+    </table></div>`;
+}
+function renderMuscleDbKeepFocus(){
+  renderMuscleDb();
+  const el = document.getElementById('mdbSearch');
+  if(el){ el.focus(); const v = el.value; el.setSelectionRange(v.length, v.length); }
+}
+function mdbEdit(id){
+  const ex = exercises.find(e=>e.id===id); if(!ex) return;
+  if(mdbEditing === id){ mdbEditing = null; renderMuscleDb(); return; }
+  const m = exMuscles(ex);
+  mdbDraft = {}; ['P','S','T'].forEach(r=> m[r].forEach(k=> mdbDraft[k] = r));
+  mdbEditing = id; renderMuscleDb();
+}
+function mdbCycle(k){
+  const order = [undefined,'P','S','T'];
+  const i = order.indexOf(mdbDraft[k]);
+  const n = order[(i+1) % order.length];
+  if(n) mdbDraft[k] = n; else delete mdbDraft[k];
+  renderMuscleDb();
+}
+function mdbSave(id){
+  const ex = exercises.find(e=>e.id===id); if(!ex) return;
+  const m = { P:[], S:[], T:[] };
+  Object.entries(mdbDraft).forEach(([k,r])=> m[r].push(k));
+  if(!m.P.length){ showToast('Pick at least one primary muscle'); return; }
+  ex.muscles = m; saveAll();
+  mdbEditing = null; renderMuscleDb(); showToast('Muscles saved for ' + ex.name);
+}
+function mdbReset(id){
+  const ex = exercises.find(e=>e.id===id); if(!ex) return;
+  delete ex.muscles; saveAll(); mdbEditing = null; renderMuscleDb(); showToast('Reset to default');
+}
+function exportMuscleDbCsv(){
+  const esc = v => `"${String(v).replace(/"/g,'""')}"`;
+  const lines = [['Exercise','ID','Category','Equipment','Primary','Secondary','Tertiary','Source'].map(esc).join(',')];
+  exercises.forEach(ex=>{
+    const m = exMuscles(ex);
+    lines.push([ex.name, ex.id, categoryLabel(ex.category), equipmentLabel(ex.equipment),
+      m.P.map(k=>MUSCLES[k].label).join('; '), m.S.map(k=>MUSCLES[k].label).join('; '), m.T.map(k=>MUSCLES[k].label).join('; '), exMuscleSource(ex)].map(esc).join(','));
+  });
+  const blob = new Blob([lines.join('\n')], { type:'text/csv' });
+  const url = URL.createObjectURL(blob);
+  const a = document.createElement('a'); a.href = url; a.download = 'ironlog-muscle-database-' + todayStr() + '.csv';
+  document.body.appendChild(a); a.click(); a.remove(); URL.revokeObjectURL(url);
+  showToast('Muscle database exported');
+}
+// Short "Primary / Secondary / Tertiary" line for cards.
+function muscleRolesHtml(ex){
+  const m = exMuscles(ex);
+  const part = (r, cls) => m[r].length ? `<div class="mroles-row"><span class="mroles-lbl">${ROLE_LABEL[r]}</span>${m[r].map(k=>mdbTag(k,r)).join('')}</div>` : '';
+  return `<div class="mroles">${part('P')}${part('S')}${part('T')}</div>`;
 }
 
 /* ---------------- Init ---------------- */
