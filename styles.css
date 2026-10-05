@@ -583,3 +583,18 @@
 .stall-inline{border-color:var(--warn);}
 .stall-inline .stall-item{border:none;padding:0;margin:4px 0 0;background:transparent;}
 .refresh-banner{border-color:var(--accent);background:linear-gradient(135deg,rgba(61,220,151,.10),var(--card) 60%);}
+
+/* ---------- Daily habits, mobility, tip of the day (js/daily.js) ---------- */
+.habit-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:10px;margin-top:12px;}
+.habit{background:var(--bg-alt);border:1px solid var(--border);border-radius:12px;padding:10px;display:flex;flex-direction:column;gap:6px;min-width:0;}
+.habit-h{font-size:12px;font-weight:800;}
+.habit-sub{font-size:11px;color:var(--text-dim);}
+.habit .seg-btn{padding:8px 4px;min-width:0;}
+.habit input{text-align:center;font-weight:700;}
+.vac-ex.suggested{border-color:var(--core);}
+.mob-list{margin:8px 0 0;padding-left:20px;font-size:12.5px;}
+.mob-list li{margin-bottom:2px;}
+.mob-list span{color:var(--text-dim);font-size:11.5px;}
+.tip-day{border-color:rgba(255,206,84,.45);}
+.tip-day .tip-actions .btn{flex:0 1 auto;}
+@media (max-width:560px){ .habit-grid{grid-template-columns:1fr 1fr;} .habit:last-child{grid-column:1/-1;} }

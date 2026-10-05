@@ -425,6 +425,8 @@ function submitCheckin(skip){
   renderPlanView(); renderDashboard();
 }
 function renderCheckinHtml(day){
+  // Pre-fill sleep from today's habit log (once per check-in).
+  if(checkinDraft.sleepAuto == null){ const s = sleepToCheckin(); if(s != null) checkinDraft.sleep = s; checkinDraft.sleepAuto = s != null; }
   const name = profile.coach && profile.coach.name ? ', ' + escapeHtml(profile.coach.name) : '';
   const seg = (field, opts) => `<div class="seg-row">${opts.map(o=>`<button class="seg-btn${checkinDraft[field]===o.v?' active':''}" onclick="setCheckin('${field}',${o.v})">${o.e?`<span class="seg-emoji">${o.e}</span>`:''}${o.l}</button>`).join('')}</div>`;
   let preview = '';
@@ -435,7 +437,7 @@ function renderCheckinHtml(day){
   return `<div style="display:flex;align-items:center;gap:12px;">${iconBadge({category:day.category})}<div><h2 style="margin-bottom:2px;">Check in${name}</h2><div class="hint" style="margin-bottom:0;">${day.dayLabel} — ${day.title} · ${day.duration||''}</div></div></div>
     <div class="hint" style="margin-top:12px;">10 seconds. Your answers set today's weights — <strong>the better you feel, the more you'll lift</strong>. Adjusting to how you feel (coaches call it autoregulation) beats forcing a fixed number on a bad day.</div>
     <label>How do you feel going into this workout?</label>${seg('feel', FEEL_OPTIONS)}
-    <label>Sleep last night</label>${seg('sleep', SLEEP_OPTIONS)}
+    <label>Sleep last night${checkinDraft.sleepAuto ? ` <span style="font-weight:500;">(from your habits log: ${todayDaily().sleep} h)</span>` : ''}</label>${seg('sleep', SLEEP_OPTIONS)}
     <label>Soreness in today's muscles</label>${seg('sore', SORE_OPTIONS)}
     <label>Anything sore, tired or recovering? <span style="font-weight:500;">(optional)</span></label>
     ${recoveryPickerHtml(checkinDraft.recovering || {}, 'setCheckinRecovery')}
@@ -752,7 +754,7 @@ function renderCoachWeekCard(){
         <button class="btn secondary" onclick="startScheduledWorkout('${m.planned.id}')">Make it up today →</button></div>`;
     } else {
       todayHtml = `<div class="today-row"><div><div style="font-weight:800;font-size:15px;">Rest day 😌</div>
-        <div class="hint" style="margin:0;">Muscles grow on rest days. Optional: a 20–40 min easy walk or bike (you can still talk = Zone 2). ${nextTxt}</div></div>
+        <div class="hint" style="margin:0;">Muscles grow on rest days. Optional: a 20–40 min easy walk (you can still talk = Zone 2), or ${suggestedRoutine().emoji} <a href="#" onclick="mobStart('${suggestedRoutine().id}');return false;" style="color:var(--accent);">${suggestedRoutine().name}</a> (${Math.round(routineSeconds(suggestedRoutine())/60)} min). ${nextTxt}</div></div>
         <button class="btn ghost" onclick="switchView('freestyle')" title="Feel like moving anyway? Freestyle picks muscles that aren't recovering.">🎲 Freestyle</button></div>`;
     }
   }

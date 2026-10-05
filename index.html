@@ -36,6 +36,7 @@
         <button class="nav-item" data-view="freestyle"><span class="ni-ic">🎲</span><span><strong>Freestyle</strong><small>Choose your own adventure</small></span></button>
         <button class="nav-item" data-view="vacation"><span class="ni-ic">🌴</span><span><strong>Vacation Circuit</strong><small>No-gym hotel workout + vacation mode</small></span></button>
         <button class="nav-item" data-view="log"><span class="ni-ic">✍️</span><span><strong>Log a Workout</strong><small>Quickly record any exercise</small></span></button>
+        <button class="nav-item" data-view="mobility"><span class="ni-ic">🧘</span><span><strong>Mobility</strong><small>Guided 6–10 min stretch routines</small></span></button>
         <button class="nav-item" data-view="warmup"><span class="ni-ic">🤸</span><span><strong>Warm Up</strong><small>10-minute guided routine</small></span></button>
         <button class="nav-item" data-view="sprints"><span class="ni-ic">🚴</span><span><strong>Sprints</strong><small>Bike interval (HIIT) timer</small></span></button>
       </div>
@@ -65,6 +66,8 @@
     <div id="recapBanner"></div>
     <div id="coachWeekCard" style="margin-bottom:16px;"></div>
     <div class="card" id="todayFocusCard" style="margin-bottom:16px;"></div>
+    <div id="habitsCard"></div>
+    <div id="tipDayCard"></div>
     <div class="grid cols-5" style="margin-bottom:16px;">
       <div class="card">
         <div class="stat"><div class="num accent" id="statTotalSessions">0</div><div class="lbl">Total sessions logged</div></div>
@@ -181,6 +184,11 @@
   </section>
 
   <!-- PROGRESS -->
+  <!-- MOBILITY -->
+  <section class="view" id="view-mobility">
+    <div id="mobilityMain"></div>
+  </section>
+
   <!-- BODY -->
   <section class="view" id="view-body">
     <div id="bodyMain"></div>
@@ -298,6 +306,7 @@
 <script src="js/workout-ux.js"></script>
 <script src="js/progress.js"></script>
 <script src="js/smartplan.js"></script>
+<script src="js/daily.js"></script>
 <script src="js/main.js"></script>
 </body>
 </html>

@@ -11,7 +11,7 @@
 // prefix so automated tests can never touch your real data.
 const TEST_MODE = /[?&]test=1/.test(location.search);
 const LS_PREFIX = TEST_MODE ? 'ironlogtest_' : 'ironlog_';
-const LS_KEYS = { profile:'ironlog_profile', exercises:'ironlog_exercises', logs:'ironlog_logs', todayPlan:'ironlog_todayplan', lastBackup:'ironlog_lastbackup', activityLogs:'ironlog_activitylogs', workoutDays:'ironlog_workoutdays', sprintSessions:'ironlog_sprintsessions', sprintProgress:'ironlog_sprintprogress', checkins:'ironlog_checkins', prevWorkoutDays:'ironlog_workoutdays_prev', seenFacts:'ironlog_seenfacts', game:'ironlog_game', freestyle:'ironlog_freestyle', body:'ironlog_body', photos:'ironlog_photos' };
+const LS_KEYS = { profile:'ironlog_profile', exercises:'ironlog_exercises', logs:'ironlog_logs', todayPlan:'ironlog_todayplan', lastBackup:'ironlog_lastbackup', activityLogs:'ironlog_activitylogs', workoutDays:'ironlog_workoutdays', sprintSessions:'ironlog_sprintsessions', sprintProgress:'ironlog_sprintprogress', checkins:'ironlog_checkins', prevWorkoutDays:'ironlog_workoutdays_prev', seenFacts:'ironlog_seenfacts', game:'ironlog_game', freestyle:'ironlog_freestyle', body:'ironlog_body', photos:'ironlog_photos', daily:'ironlog_daily' };
 Object.keys(LS_KEYS).forEach(k=> LS_KEYS[k] = LS_KEYS[k].replace(/^ironlog_/, LS_PREFIX));
 
 // --- Pacific Time pinning ---------------------------------------------------

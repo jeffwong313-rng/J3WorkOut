@@ -196,6 +196,22 @@ test('refresh cycle rotates exercise choices', ()=>{
   eq(r, true);
 });
 
+group('Daily habits & mobility');
+test('habit streak counts consecutive logged days', ()=>{
+  const r = app(`const t = todayStr(); dailies = {}; dailies[t] = {sleep:7}; dailies[addDaysToDateStr(t,-1)] = {steps:5000}; dailies[addDaysToDateStr(t,-3)] = {sleep:8};
+    const n = habitStreak(); dailies = {}; n`);
+  eq(r, 2);
+});
+test('logged sleep pre-fills the check-in', ()=>{
+  const r = app(`const t = todayStr(); dailies = {}; const out = [];
+    [5, 6.5, 8].forEach(h=>{ dailies[t] = {sleep:h}; out.push(sleepToCheckin()); }); dailies = {}; out`);
+  eq(r, [-1, 0, 1]);
+});
+test('mobility suggestion follows sore areas', ()=>{
+  eq(app(`const c = {id:'x', date:todayStr(), feel:3, sleep:0, sore:0, recovering:{shoulders:'sore'}, readiness:3}; checkins.push(c);
+    const id = suggestedRoutine().id; checkins = checkins.filter(x=>x!==c); id`), 'shoulders');
+});
+
 /* ================= RUNNER ================= */
 (async function run(){
   await fresh();

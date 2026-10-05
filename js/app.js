@@ -49,6 +49,7 @@ function switchView(name){
   if(name === 'calendar') renderCalendar();
   if(name === 'progress') renderProgress();
   if(name === 'body') renderBody();
+  if(name === 'mobility') renderMobility();
   if(name === 'settings') renderSettings();
 }
 
@@ -61,6 +62,8 @@ function renderDashboard(){
   const rb = document.getElementById('recapBanner'); if(rb) rb.innerHTML = refreshBannerHtml() + recapBannerHtml();
   renderCoachWeekCard();
   renderTodayFocusCard();
+  renderHabitsCard();
+  const td = document.getElementById('tipDayCard'); if(td) td.innerHTML = tipCardHtml();
   document.getElementById('statTotalSessions').textContent = logs.length;
 
   const wk = currentWeekNumber();

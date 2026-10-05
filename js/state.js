@@ -133,7 +133,7 @@ const CATEGORY_MET = {
   'lower-compound': 6, 'upper-compound': 5, 'upper-accessory': 4.5,
   'accessory': 3.5, 'bodyweight': 4, 'fullbody': 8, 'conditioning': 8
 };
-const ACTIVITY_MET = { basketball: 6.5, othersport: 7, vacation: 8 }; // vacation = bodyweight HIIT-style circuit
+const ACTIVITY_MET = { basketball: 6.5, othersport: 7, vacation: 8, mobility: 2.5 }; // vacation = bodyweight HIIT-style circuit
 const SECONDS_PER_REP = 3; // rough cadence for one rep, up + down
 
 function bodyweightKg(){ return (profile.weight || 150) * 0.453592; }

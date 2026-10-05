@@ -10,6 +10,7 @@ function renderAll(){
   renderFreestyle();
   renderVacation();
   renderBody();
+  renderMobility();
   renderPlanView();
   renderLogView();
   renderWarmupTab();
