@@ -46,7 +46,8 @@
         <div class="nav-menu-h">Track</div>
         <button class="nav-item" data-view="calendar"><span class="ni-ic">📅</span><span><strong>Calendar</strong><small>Planned, done &amp; missed days</small></span></button>
         <button class="nav-item" data-view="history"><span class="ni-ic">🗂️</span><span><strong>History</strong><small>Every set you've logged</small></span></button>
-        <button class="nav-item" data-view="progress"><span class="ni-ic">📊</span><span><strong>Progress</strong><small>Charts &amp; weekly totals</small></span></button>
+        <button class="nav-item" data-view="progress"><span class="ni-ic">📊</span><span><strong>Progress</strong><small>Records, strength trend, monthly recap</small></span></button>
+        <button class="nav-item" data-view="body"><span class="ni-ic">⚖️</span><span><strong>Body</strong><small>Weigh-ins, measurements, photos</small></span></button>
       </div>
     </div>
     <div class="nav-group" data-group="me">
@@ -61,6 +62,7 @@
 
   <!-- DASHBOARD -->
   <section class="view active" id="view-dashboard">
+    <div id="recapBanner"></div>
     <div id="coachWeekCard" style="margin-bottom:16px;"></div>
     <div class="card" id="todayFocusCard" style="margin-bottom:16px;"></div>
     <div class="grid cols-5" style="margin-bottom:16px;">
@@ -179,16 +181,13 @@
   </section>
 
   <!-- PROGRESS -->
-  <section class="view" id="view-progress">
-    <div class="card" style="margin-bottom:16px;">
-      <div class="flex-between">
-        <h2>Weekly Progress</h2>
-        <select id="progressExerciseSelect" style="width:auto;" onchange="renderProgress()"></select>
-      </div>
-      <div class="hint">Max weight logged each week vs. your progressive overload target. Overload climbs happen every other week.</div>
-      <div id="progressChart" style="margin-top:10px;"></div>
-    </div>
+  <!-- BODY -->
+  <section class="view" id="view-body">
+    <div id="bodyMain"></div>
+  </section>
 
+  <section class="view" id="view-progress">
+    <div id="progressExtras"></div>
     <div class="card" style="margin-bottom:16px;">
       <h2>Weekly Volume (all exercises)</h2>
       <div class="hint">Total reps × weight logged per week — a good sense of overall workload.</div>
@@ -297,6 +296,7 @@
 <script src="js/vacation.js"></script>
 <script src="js/muscledb.js"></script>
 <script src="js/workout-ux.js"></script>
+<script src="js/progress.js"></script>
 <script src="js/main.js"></script>
 </body>
 </html>

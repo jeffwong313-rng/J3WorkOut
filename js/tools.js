@@ -718,7 +718,9 @@ function allWeeksWithData(){
 }
 
 function renderProgress(){
+  renderProgressExtras();
   const sel = document.getElementById('progressExerciseSelect');
+  if(!sel){ renderProgressVolume(); return; } // old per-week chart removed in favor of the Strength trend card
   const currentVal = sel.value;
   sel.innerHTML = exercises.map(e=>`<option value="${e.id}">${e.name}</option>`).join('');
   sel.value = currentVal || selectedExerciseId || (exercises[0] && exercises[0].id) || '';
@@ -777,6 +779,10 @@ function renderProgress(){
       </div>`;
   }
 
+  renderProgressVolume();
+}
+function renderProgressVolume(){
+  const weeks = allWeeksWithData();
   // Bar chart: weekly total volume across all exercises
   const volBox = document.getElementById('volumeChart');
   const volByWeek = weeks.map(week=>{

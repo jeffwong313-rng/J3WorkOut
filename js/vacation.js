@@ -150,7 +150,7 @@ function vacFinish(early){
       notes: `${rounds} of ${VAC_ROUNDS} rounds · ${workBlocks} work intervals · ${minutes} min` });
     const xp = workBlocks*5 + (rounds >= VAC_ROUNDS ? 50 : 0);
     const before = levelInfo(game.xp).lvl;
-    game.xp = (game.xp||0) + xp; saveGame();
+    gainXP(xp); saveGame();
     vac.lastXp = xp; vac.lastRounds = rounds; vac.lastMinutes = minutes;
     if(levelInfo(game.xp).lvl > before) setTimeout(()=> showToast(`⬆️ Level up! Level ${levelInfo(game.xp).lvl} — ${levelInfo(game.xp).title}`), 2000);
     saveAll(); checkBadges();

@@ -14,6 +14,13 @@
 /* ---------------- Gamification: XP, levels, badges ---------------- */
 let game = loadJSON(LS_KEYS.game, { xp:0, badges:[], prs:0, sessions:0, tryNew:0, maxCombo:0 });
 function saveGame(){ save(LS_KEYS.game, game); }
+// All XP goes through here so the monthly recap can show XP earned per month.
+function gainXP(n){
+  game.xp = (game.xp||0) + n;
+  const k = todayStr().slice(0,7);
+  game.xpByMonth = game.xpByMonth || {};
+  game.xpByMonth[k] = (game.xpByMonth[k]||0) + n;
+}
 const XP_PER_LEVEL = 300;
 const LEVEL_TITLES = ['Rookie','Apprentice','Iron Explorer','Gym Adventurer','Barbell Knight','Rep Ranger','Iron Sage','Legend'];
 function levelInfo(xp){
@@ -59,7 +66,7 @@ function awardForLog(ex, sets){
   if(firstTime){ xp += 50; parts.push('+50 🆕 discovery'); }
   if(pr){ xp += 25; parts.push('+25 📈 PR'); game.prs = (game.prs||0) + 1; }
   const before = levelInfo(game.xp).lvl;
-  game.xp = (game.xp||0) + xp;
+  gainXP(xp);
   const after = levelInfo(game.xp);
   saveGame();
   if(after.lvl > before) setTimeout(()=> showToast(`⬆️ Level up! Level ${after.lvl} — ${after.title}`), 2600);
@@ -361,7 +368,7 @@ function fsSave(){
   const rx = fsRx(ex), readiness = todayReadiness();
   const award = awardForLog(ex, sets);
   const muscle = fsMuscleOf(ex);
-  if(!fs.history.some(h=>h.muscle===muscle) && fs.history.length){ award.xp += 15; award.parts.push('+15 🔀 new muscle combo'); game.xp += 15; }
+  if(!fs.history.some(h=>h.muscle===muscle) && fs.history.length){ award.xp += 15; award.parts.push('+15 🔀 new muscle combo'); gainXP(15); }
   if(fs.current.fromNew){ game.tryNew = (game.tryNew||0) + 1; }
   logs.push({ id: uid(), exerciseId: ex.id, date: todayStr(), sets, notes:'', dayId:'freestyle', feel: wizardFeel, readiness });
   updateProgressAfter(ex, sets, rx, wizardFeel, readiness);
@@ -377,7 +384,7 @@ function fsSave(){
 function fsFinish(){
   if(fs.history.length){
     game.sessions = (game.sessions||0) + 1;
-    game.xp += 25; fs.xp += 25;
+    gainXP(25); fs.xp += 25;
     fs.newBadges = fs.newBadges.concat(checkBadges().map(b=>b.id));
   }
   fs.stage = 'done'; saveGame(); saveFs(); renderFreestyle(); renderDashboard(); window.scrollTo(0,0);

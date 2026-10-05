@@ -9,6 +9,7 @@ function renderAll(){
   renderCoach();
   renderFreestyle();
   renderVacation();
+  renderBody();
   renderPlanView();
   renderLogView();
   renderWarmupTab();

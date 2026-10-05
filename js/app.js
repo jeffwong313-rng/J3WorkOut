@@ -48,6 +48,7 @@ function switchView(name){
   if(name === 'history') renderHistory();
   if(name === 'calendar') renderCalendar();
   if(name === 'progress') renderProgress();
+  if(name === 'body') renderBody();
   if(name === 'settings') renderSettings();
 }
 
@@ -57,6 +58,7 @@ function renderDashboard(){
   document.getElementById('headerWeek').textContent = 'Week ' + currentWeekNumber();
   document.getElementById('headerDate').textContent = new Date().toLocaleDateString(undefined,{weekday:'short',month:'short',day:'numeric',timeZone:APP_TIMEZONE}) + ' PT';
 
+  const rb = document.getElementById('recapBanner'); if(rb) rb.innerHTML = recapBannerHtml();
   renderCoachWeekCard();
   renderTodayFocusCard();
   document.getElementById('statTotalSessions').textContent = logs.length;

@@ -325,7 +325,7 @@ function saveProfile(){
 }
 
 function exportData(){
-  const data = { profile, exercises, logs, activityLogs, workoutDays: WORKOUT_DAYS, sprintSessions, checkins, seenFacts, game, exportedAt: new Date().toISOString() };
+  const data = { profile, exercises, logs, activityLogs, workoutDays: WORKOUT_DAYS, sprintSessions, checkins, seenFacts, game, body: bodyLogs, photos: bodyPhotos, exportedAt: new Date().toISOString() };
   const blob = new Blob([JSON.stringify(data,null,2)], {type:'application/json'});
   const url = URL.createObjectURL(blob);
   const a = document.createElement('a');
@@ -370,6 +370,8 @@ function importData(evt){
       if(data.sprintSessions) sprintSessions = data.sprintSessions;
       if(data.checkins) checkins = data.checkins;
       if(data.game){ game = data.game; saveGame(); }
+      if(data.body){ bodyLogs = data.body; saveBody(); }
+      if(data.photos){ bodyPhotos = data.photos; savePhotos(); }
       if(data.seenFacts){ seenFacts = data.seenFacts; save(LS_KEYS.seenFacts, seenFacts); }
       saveAll();
       renderAll();
@@ -394,6 +396,7 @@ function resetAllData(){
   checkins = [];
   localStorage.removeItem(LS_KEYS.seenFacts); seenFacts = []; tipCtx = null; hideTip();
   localStorage.removeItem(LS_KEYS.game); localStorage.removeItem(LS_KEYS.freestyle);
+  localStorage.removeItem(LS_KEYS.body); localStorage.removeItem(LS_KEYS.photos); bodyLogs = []; bodyPhotos = [];
   game = { xp:0, badges:[], prs:0, sessions:0, tryNew:0, maxCombo:0 }; fs = null; fsSetup = null;
   coachEditing = false; coachDraft = null;
   profile = JSON.parse(JSON.stringify(DEFAULT_PROFILE));
