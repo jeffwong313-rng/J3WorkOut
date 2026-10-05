@@ -23,7 +23,7 @@ function updateTimerDisplay(){
     const frac = timerTotal>0 ? timerRemaining/timerTotal : 0;
     circle.setAttribute('stroke-dasharray', CIRC);
     circle.setAttribute('stroke-dashoffset', CIRC * (1-frac));
-    circle.setAttribute('stroke', timerRemaining<=5 && timerRemaining>0 ? '#ff9f5a' : '#3ddc97');
+    circle.style.stroke = (timerRemaining<=5 && timerRemaining>0) ? 'var(--accent2)' : 'var(--accent)';
   });
   document.querySelectorAll('#timerStartBtn').forEach(btn=> btn.textContent = timerRunning ? 'Pause' : 'Start');
 }
@@ -210,8 +210,8 @@ function renderWarmupActiveHtml(){
     <div class="sprint-ring-wrap">
       <div class="sprint-ring">
         <svg width="180" height="180">
-          <circle cx="90" cy="90" r="80" stroke="#2a2f3d" stroke-width="14" fill="none"/>
-          <circle id="warmupTimerCircle" cx="90" cy="90" r="80" stroke="#3ddc97" stroke-width="14" fill="none" stroke-linecap="round"/>
+          <circle cx="90" cy="90" r="80" style="stroke:var(--border)" stroke-width="14" fill="none"/>
+          <circle id="warmupTimerCircle" cx="90" cy="90" r="80" style="stroke:var(--accent)" stroke-width="14" fill="none" stroke-linecap="round"/>
         </svg>
         <div class="time" id="warmupTimerDisplay">01:00</div>
       </div>
@@ -480,8 +480,8 @@ function renderSprintActiveHtml(progress){
       <div class="sprint-ring-wrap">
         <div class="sprint-ring">
           <svg width="180" height="180">
-            <circle cx="90" cy="90" r="80" stroke="#2a2f3d" stroke-width="14" fill="none"/>
-            <circle id="sprintTimerCircle" cx="90" cy="90" r="80" stroke="#ff5d6c" stroke-width="14" fill="none" stroke-linecap="round"/>
+            <circle cx="90" cy="90" r="80" style="stroke:var(--border)" stroke-width="14" fill="none"/>
+            <circle id="sprintTimerCircle" cx="90" cy="90" r="80" style="stroke:var(--danger)" stroke-width="14" fill="none" stroke-linecap="round"/>
           </svg>
           <div class="time" id="sprintTimerDisplay">01:00</div>
         </div>
@@ -496,8 +496,8 @@ function renderSprintActiveHtml(progress){
       <div class="sprint-ring-wrap">
         <div class="sprint-ring">
           <svg width="180" height="180">
-            <circle cx="90" cy="90" r="80" stroke="#2a2f3d" stroke-width="14" fill="none"/>
-            <circle id="sprintTimerCircle" cx="90" cy="90" r="80" stroke="#5aa9ff" stroke-width="14" fill="none" stroke-linecap="round"/>
+            <circle cx="90" cy="90" r="80" style="stroke:var(--border)" stroke-width="14" fill="none"/>
+            <circle id="sprintTimerCircle" cx="90" cy="90" r="80" style="stroke:var(--blue)" stroke-width="14" fill="none" stroke-linecap="round"/>
           </svg>
           <div class="time" id="sprintTimerDisplay">01:00</div>
         </div>
@@ -756,26 +756,26 @@ function renderProgress(){
     for(let g=0; g<=gridLines; g++){
       const val = maxVal * g/gridLines;
       const y = yFor(val);
-      gridSvg += `<line x1="${padL}" y1="${y}" x2="${w-padR}" y2="${y}" stroke="#2a2f3d" stroke-width="1"/>`;
-      gridSvg += `<text x="4" y="${y+4}" font-size="10" fill="#9096a8">${Math.round(val)}</text>`;
+      gridSvg += `<line x1="${padL}" y1="${y}" x2="${w-padR}" y2="${y}" style="stroke:var(--border)" stroke-width="1"/>`;
+      gridSvg += `<text x="4" y="${y+4}" font-size="10" style="fill:var(--text-dim)">${Math.round(val)}</text>`;
     }
-    const xLabels = points.map((p,i)=> `<text x="${xFor(i)}" y="${h-6}" font-size="10" fill="#9096a8" text-anchor="middle">W${p.week}</text>`).join('');
+    const xLabels = points.map((p,i)=> `<text x="${xFor(i)}" y="${h-6}" font-size="10" style="fill:var(--text-dim)" text-anchor="middle">W${p.week}</text>`).join('');
     const actualDots = actualPts.map(p=>{
       const idx = points.indexOf(p);
-      return `<circle cx="${xFor(idx)}" cy="${yFor(p.actual)}" r="4" fill="#ff9f5a"/>`;
+      return `<circle cx="${xFor(idx)}" cy="${yFor(p.actual)}" r="4" style="fill:var(--accent2)"/>`;
     }).join('');
 
     chartBox.innerHTML = `
       <svg width="100%" viewBox="0 0 ${w} ${h}" style="max-width:100%;">
         ${gridSvg}
-        <path d="${targetPath}" fill="none" stroke="#3ddc97" stroke-width="2" stroke-dasharray="5,4"/>
-        <path d="${actualPath}" fill="none" stroke="#ff9f5a" stroke-width="2.5"/>
+        <path d="${targetPath}" fill="none" style="stroke:var(--accent)" stroke-width="2" stroke-dasharray="5,4"/>
+        <path d="${actualPath}" fill="none" style="stroke:var(--accent2)" stroke-width="2.5"/>
         ${actualDots}
         ${xLabels}
       </svg>
       <div style="display:flex;gap:16px;font-size:12px;color:var(--text-dim);margin-top:6px;">
-        <div><span style="color:#3ddc97;">■</span> Target (progressive overload)</div>
-        <div><span style="color:#ff9f5a;">■</span> Actual best logged</div>
+        <div><span style="color:var(--accent);">■</span> Target (progressive overload)</div>
+        <div><span style="color:var(--accent2);">■</span> Actual best logged</div>
       </div>`;
   }
 

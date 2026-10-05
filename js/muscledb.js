@@ -396,7 +396,7 @@ function exportMuscleDbCsv(){
   });
   const blob = new Blob([lines.join('\n')], { type:'text/csv' });
   const url = URL.createObjectURL(blob);
-  const a = document.createElement('a'); a.href = url; a.download = 'ironlog-muscle-database-' + todayStr() + '.csv';
+  const a = document.createElement('a'); a.href = url; a.download = 'j3workout-muscle-database-' + todayStr() + '.csv';
   document.body.appendChild(a); a.click(); a.remove(); URL.revokeObjectURL(url);
   showToast('Muscle database exported');
 }

@@ -47,7 +47,7 @@ function switchView(name){
   if(name === 'sprints') renderSprintsTab();
   if(name === 'history') renderHistory();
   if(name === 'calendar') renderCalendar();
-  if(name === 'progress') renderProgress();
+  if(name === 'progress'){ renderDashboard(); renderProgress(); } // dashboard fills the 'At a glance' tiles
   if(name === 'body') renderBody();
   if(name === 'mobility') renderMobility();
   if(name === 'settings') renderSettings();
@@ -56,7 +56,8 @@ function switchView(name){
 /* ---------------- Dashboard ---------------- */
 
 function renderDashboard(){
-  document.getElementById('headerWeek').textContent = 'Week ' + currentWeekNumber();
+  // In coach mode the header counts weeks of your plan (and flags deloads); otherwise the original program week.
+  document.getElementById('headerWeek').textContent = coachOn() ? ('Week ' + planWeekIndex(todayStr()) + (isDeloadWeek() ? ' 🧘' : '')) : ('Week ' + currentWeekNumber());
   document.getElementById('headerDate').textContent = new Date().toLocaleDateString(undefined,{weekday:'short',month:'short',day:'numeric',timeZone:APP_TIMEZONE}) + ' PT';
 
   const rb = document.getElementById('recapBanner'); if(rb) rb.innerHTML = refreshBannerHtml() + recapBannerHtml();
@@ -89,6 +90,7 @@ function renderDashboard(){
 
 
   const recentBox = document.getElementById('recentActivity');
+  if(!recentBox) return;
   const recentItems = [
     ...logs.map(l=>({ date:l.date, id:l.id, kind:'exercise', data:l })),
     ...activityLogs.map(a=>({ date:a.date, id:a.id, kind:'activity', data:a }))
@@ -425,8 +427,8 @@ function renderPlanView(){
             <div class="timer-right">
               <div class="timer-ring">
                 <svg width="60" height="60">
-                  <circle cx="30" cy="30" r="24" stroke="#2a2f3d" stroke-width="5" fill="none"/>
-                  <circle id="timerCircle" cx="30" cy="30" r="24" stroke="#3ddc97" stroke-width="5" fill="none"
+                  <circle cx="30" cy="30" r="24" style="stroke:var(--border)" stroke-width="5" fill="none"/>
+                  <circle id="timerCircle" cx="30" cy="30" r="24" style="stroke:var(--accent)" stroke-width="5" fill="none"
                     stroke-linecap="round" stroke-dasharray="151" stroke-dashoffset="0"/>
                 </svg>
                 <div class="time" id="timerDisplay">01:00</div>

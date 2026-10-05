@@ -6,6 +6,7 @@
 
 function renderSettings(){
   renderBackupStatus();
+  renderAppearanceSettings();
   document.getElementById('profHeight').value = profile.height;
   document.getElementById('profWeight').value = profile.weight;
   document.getElementById('profBuild').value = profile.build;
@@ -329,7 +330,7 @@ function exportData(){
   const blob = new Blob([JSON.stringify(data,null,2)], {type:'application/json'});
   const url = URL.createObjectURL(blob);
   const a = document.createElement('a');
-  a.href = url; a.download = 'ironlog-backup-'+todayStr()+'.json';
+  a.href = url; a.download = 'j3workout-backup-'+todayStr()+'.json';
   document.body.appendChild(a); a.click(); a.remove();
   URL.revokeObjectURL(url);
   localStorage.setItem(LS_KEYS.lastBackup, new Date().toISOString());

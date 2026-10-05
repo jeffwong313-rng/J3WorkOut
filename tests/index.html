@@ -212,6 +212,21 @@ test('mobility suggestion follows sore areas', ()=>{
     const id = suggestedRoutine().id; checkins = checkins.filter(x=>x!==c); id`), 'shoulders');
 });
 
+group('Polish');
+test('working weight falls back to your last logged top set', ()=>{
+  const r = app(`logs.length = 0; const ex = Object.assign({}, exercises.find(e=>e.id==='gobletsquat')); delete ex.workingWeight;
+    const a = workingWeight(ex);
+    logs.push({id:'w1',exerciseId:'gobletsquat',date:addDaysToDateStr(todayStr(),-2),sets:[{reps:10,weight:25},{reps:10,weight:22.5}]});
+    const b = workingWeight(ex); logs.length = 0; [a === targetForExerciseAtWeek(ex, currentWeekNumber()), b]`);
+  eq(r, [true, 25]);
+});
+test('theme + text size apply to the page', ()=>{
+  const r = app(`const saved = [profile.theme, profile.textSize]; setTheme('light'); setTextSize('large');
+    const out = [document.documentElement.dataset.theme, document.documentElement.style.zoom];
+    setTheme(saved[0]||'dark'); setTextSize(saved[1]||'normal'); out`);
+  eq(r, ['light', '1.1']);
+});
+
 /* ================= RUNNER ================= */
 (async function run(){
   await fresh();

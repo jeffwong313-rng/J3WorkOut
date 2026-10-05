@@ -536,7 +536,7 @@ function fsDoingHtml(){
           ${[30,45,60,90,120,180].map(s=>`<button class="btn secondary" onclick="setTimerPreset(${s})">${s}s</button>`).join('')}
         </div></div>
         <div class="timer-right">
-          <div class="timer-ring"><svg width="60" height="60"><circle cx="30" cy="30" r="24" stroke="#2a2f3d" stroke-width="5" fill="none"/><circle id="timerCircle" cx="30" cy="30" r="24" stroke="#3ddc97" stroke-width="5" fill="none" stroke-linecap="round" stroke-dasharray="151" stroke-dashoffset="0"/></svg><div class="time" id="timerDisplay">01:00</div></div>
+          <div class="timer-ring"><svg width="60" height="60"><circle cx="30" cy="30" r="24" style="stroke:var(--border)" stroke-width="5" fill="none"/><circle id="timerCircle" cx="30" cy="30" r="24" style="stroke:var(--accent)" stroke-width="5" fill="none" stroke-linecap="round" stroke-dasharray="151" stroke-dashoffset="0"/></svg><div class="time" id="timerDisplay">01:00</div></div>
           <div class="row"><button class="btn" id="timerStartBtn" onclick="toggleTimer()">Start</button><button class="btn secondary" onclick="resetTimer()">Reset</button></div>
         </div>
       </div>

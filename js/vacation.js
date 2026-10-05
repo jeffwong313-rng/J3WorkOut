@@ -256,7 +256,7 @@ function vacActiveHtml(){
     <div class="progress-label"><span class="progress-pct">Round ${p.round} / ${VAC_ROUNDS}</span> · Exercise ${p.idx+1} / 5 · <span id="vacTotal"></span></div>
     <div class="sprint-phase-banner ${cls}">${label}</div>
     <div class="vac-live">
-      <div class="sprint-ring"><svg width="180" height="180"><circle cx="90" cy="90" r="80" stroke="#2a2f3d" stroke-width="10" fill="none"/><circle id="vacRing" cx="90" cy="90" r="80" stroke="${color}" stroke-width="10" fill="none" stroke-linecap="round"/></svg><div class="time" id="vacTime">${vac.remaining}</div></div>
+      <div class="sprint-ring"><svg width="180" height="180"><circle cx="90" cy="90" r="80" style="stroke:var(--border)" stroke-width="10" fill="none"/><circle id="vacRing" cx="90" cy="90" r="80" stroke="${color}" stroke-width="10" fill="none" stroke-linecap="round"/></svg><div class="time" id="vacTime">${vac.remaining}</div></div>
       <div class="vac-live-ex">
         <div class="ex-stat-name" style="font-size:20px;">${vacName(ex)}</div>
         <div class="hint" style="margin:2px 0 8px;">${ex.focus}</div>

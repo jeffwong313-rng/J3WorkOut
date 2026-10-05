@@ -3,7 +3,8 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>Iron Log — Workout Tracker</title>
+<title>J3 WorkOut</title>
+<meta name="theme-color" content="#0f1115">
 <link rel="stylesheet" href="styles.css">
 </head>
 <body>
@@ -11,10 +12,10 @@
 
   <header class="top">
     <div class="brand">
-      <div class="logo">IL</div>
+      <div class="logo">J3</div>
       <div>
-        <h1>Iron Log</h1>
-        <div class="subtitle">Your personal strength &amp; progressive overload tracker</div>
+        <h1>J3 WorkOut</h1>
+        <div class="subtitle">Your personal coach — train smart, every day</div>
       </div>
     </div>
     <div class="stat" style="text-align:right">
@@ -68,28 +69,6 @@
     <div class="card" id="todayFocusCard" style="margin-bottom:16px;"></div>
     <div id="habitsCard"></div>
     <div id="tipDayCard"></div>
-    <div class="grid cols-5" style="margin-bottom:16px;">
-      <div class="card">
-        <div class="stat"><div class="num accent" id="statTotalSessions">0</div><div class="lbl">Total sessions logged</div></div>
-      </div>
-      <div class="card">
-        <div class="stat"><div class="num accent2" id="statWeekVolume">0</div><div class="lbl">This week's volume (lb)</div></div>
-      </div>
-      <div class="card">
-        <div class="stat"><div class="num" id="statWeekCalories" style="color:var(--activity)">0</div><div class="lbl">Calories this week ⚡</div></div>
-      </div>
-      <div class="card">
-        <div class="stat"><div class="num warn" id="statNextClimb">—</div><div class="lbl">Next overload climb</div></div>
-      </div>
-      <div class="card">
-        <div class="stat"><div class="num accent" id="statStreak">0</div><div class="lbl">Day streak 🔥</div></div>
-      </div>
-    </div>
-
-    <div class="card">
-      <h2>Recent Activity</h2>
-      <div id="recentActivity"><div class="empty">No workouts logged yet — head to Train → Log a Workout (or Today’s Workout) to get started.</div></div>
-    </div>
   </section>
 
   <!-- COACH (questionnaire + your program) -->
@@ -195,6 +174,31 @@
   </section>
 
   <section class="view" id="view-progress">
+    <h2 class="page-h">At a glance</h2>
+    <div class="grid cols-5" style="margin-bottom:16px;">
+      <div class="card">
+        <div class="stat"><div class="num accent" id="statTotalSessions">0</div><div class="lbl">Total sessions logged</div></div>
+      </div>
+      <div class="card">
+        <div class="stat"><div class="num accent2" id="statWeekVolume">0</div><div class="lbl">This week's volume (lb)</div></div>
+      </div>
+      <div class="card">
+        <div class="stat"><div class="num" id="statWeekCalories" style="color:var(--activity)">0</div><div class="lbl">Calories this week ⚡</div></div>
+      </div>
+      <div class="card">
+        <div class="stat"><div class="num warn" id="statNextClimb">—</div><div class="lbl">Next overload climb</div></div>
+      </div>
+      <div class="card">
+        <div class="stat"><div class="num accent" id="statStreak">0</div><div class="lbl">Day streak 🔥</div></div>
+      </div>
+    </div>
+
+    <div class="card">
+      <h2>Recent activity</h2>
+      <div id="recentActivity"><div class="empty">No workouts logged yet — head to Train → Log a Workout (or Today’s Workout) to get started.</div></div>
+    </div>
+
+    <div style="height:16px"></div>
     <div id="progressExtras"></div>
     <div class="card" style="margin-bottom:16px;">
       <h2>Weekly Volume (all exercises)</h2>
@@ -213,6 +217,11 @@
 
   <!-- SETTINGS -->
   <section class="view" id="view-settings">
+    <div class="card" style="margin-bottom:16px;">
+      <h2>Appearance</h2>
+      <div id="appearanceBox"></div>
+    </div>
+
     <div class="card" style="margin-bottom:16px;">
       <h2>Your Profile</h2>
       <div class="hint">Used to set your starting baseline weights, and to estimate calories burned per workout.</div>
@@ -286,12 +295,13 @@
     </div>
   </section>
 
-  <div class="footer-note">Iron Log stores all data locally in your browser. Nothing is sent anywhere. All dates and times shown are Pacific Time.</div>
+  <div class="footer-note">J3 WorkOut stores all data locally in your browser. Nothing is sent anywhere. All dates and times shown are Pacific Time.</div>
 </div>
 
 <div class="toast" id="toast"></div>
 <div class="tip-pop" id="tipPop"></div>
 <div class="undo-toast" id="undoToast" role="status"></div>
+<div id="tourLayer"></div>
 
 <script src="js/data.js"></script>
 <script src="js/state.js"></script>
@@ -307,6 +317,7 @@
 <script src="js/progress.js"></script>
 <script src="js/smartplan.js"></script>
 <script src="js/daily.js"></script>
+<script src="js/polish.js"></script>
 <script src="js/main.js"></script>
 </body>
 </html>

@@ -458,6 +458,9 @@ function startScheduledWorkout(dayId){
 function roundToInc(w, inc){ const step = inc > 0 ? inc : 1; return Math.round(w/step)*step; }
 function workingWeight(ex){
   if(ex.workingWeight != null && ex.workingWeight !== '' && !isNaN(+ex.workingWeight)) return +ex.workingWeight;
+  // No saved working weight yet (e.g. data imported or logged before coach mode): use your most recent top set.
+  const prev = logs.filter(l=>l.exerciseId===ex.id && l.sets && l.sets.length).sort((a,b)=> a.date.localeCompare(b.date)).pop();
+  if(prev){ const top = Math.max(...prev.sets.map(s=> ex.unit==='lb' ? (s.weight||0) : (s.weight||s.reps||0))); if(top > 0) return top; }
   return targetForExerciseAtWeek(ex, currentWeekNumber());
 }
 function rxFor(ex, day){

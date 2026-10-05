@@ -21,5 +21,7 @@ function renderAll(){
   renderSettings();
 }
 
+applyAppearance();
 updateTimerDisplay();
 renderAll();
+maybeStartTour();
