@@ -3,12 +3,14 @@
 A personal workout coach that runs entirely in your browser — no account, no server, no tracking. Your data lives in the browser's local storage; export a JSON backup from **Me → Settings → Data**.
 
 ## Features
-- **Coach** — answers a few questions, builds a weekly plan around the days you pick, and adjusts weights to how you feel each day (daily check-in + double progression).
-- **Freestyle** — choose-your-own-adventure workouts with XP, levels, badges and an exercise collection.
-- **Vacation Circuit** — guided no-gym hotel circuit with voice cues; vacation mode pauses your gym schedule.
-- **Muscle database** — primary / secondary / tertiary muscles for every exercise; sore or injured areas are automatically avoided.
-- **Learn** — "Did you know?" tips (anatomy, exercise research, ideas paraphrased from the Huberman Lab podcast).
-- Progress records, calendar, history, warm-up, sprints and more.
+- **Coach**: answers a few questions, builds a weekly plan around the days you pick, and adjusts weights to how you feel each day (daily check-in + double progression). Deload weeks, plateau detection and an 8-week plan refresh keep it working long-term.
+- **Fast logging**: −/+ steppers, a ✓ per set that starts the rest timer, "last time" numbers to beat, screen kept awake, undo instead of pop-ups.
+- **Freestyle**: choose-your-own-adventure workouts with XP, levels, badges and an exercise collection.
+- **Vacation Circuit & Mobility**: guided, hands-free timers with voice cues; vacation mode pauses your gym schedule.
+- **Muscle database**: primary / secondary / tertiary muscles for every exercise; sore or injured areas are automatically avoided.
+- **Progress**: personal records, strength trends (estimated 1-rep max), monthly recap, weigh-ins, measurements and on-device progress photos.
+- **Daily habits**: sleep, steps and protein in 20 seconds; tip of the day from the learning library.
+- Light / dark theme, adjustable text size, first-run tour.
 
 ## Project layout
 ```
@@ -24,6 +26,11 @@ js/learn.js       "Did you know?" tips
 js/freestyle.js   Freestyle mode + XP / levels / badges + exercise stat cards
 js/vacation.js    Vacation circuit + vacation mode
 js/muscledb.js    muscle database + recovery-aware exercise selection + spreadsheet view
+js/workout-ux.js  set rows (steppers, ✓ per set), last-time numbers, wake lock, undo
+js/progress.js    records, strength trend, monthly recap, body tracking & photos
+js/smartplan.js   deload weeks, plateau detection, 8-week refresh
+js/daily.js       daily habits, mobility routines, tip of the day
+js/polish.js      theme, text size, first-run tour
 js/main.js        startup
 tests/index.html  automated tests
 ```
