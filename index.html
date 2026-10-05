@@ -569,15 +569,6 @@
       </div>
     </div>
 
-    <div class="card" style="margin-bottom:16px;">
-      <h2 id="targetsTitle">This Week's Targets</h2>
-      <div class="hint" id="targetsHint">Beginner baseline — everything starts at <strong>3 sets × 10 reps</strong>. Weights climb gently every other week. Adjust anytime in Settings.</div>
-      <table id="targetsTable">
-        <thead><tr><th>Exercise</th><th>Prescription</th><th id="thBaseline">Baseline</th><th id="thTarget">Target this week</th><th>Best logged</th><th>Status</th></tr></thead>
-        <tbody></tbody>
-      </table>
-    </div>
-
     <div class="card">
       <h2>Recent Activity</h2>
       <div id="recentActivity"><div class="empty">No workouts logged yet — head to Train → Log a Workout (or Today’s Workout) to get started.</div></div>
@@ -1393,34 +1384,6 @@ function renderDashboard(){
   }
   document.getElementById('statStreak').textContent = currentStreak();
 
-  const tbody = document.querySelector('#targetsTable tbody');
-  tbody.innerHTML = '';
-  // In coach mode, only show the exercises in your plan, with your working weight and what
-  // you'd lift next time on a "Good" day — the full 140-exercise library is just noise.
-  const coachMode = coachOn();
-  const planDays = coachMode ? WORKOUT_DAYS.filter(d=>Object.values(profile.coach.schedule).includes(d.id)) : [];
-  const tableList = coachMode ? [...new Set(planDays.flatMap(d=>d.lifts))].map(id=>exercises.find(e=>e.id===id)).filter(Boolean) : exercises;
-  document.getElementById('targetsTitle').textContent = coachMode ? 'Your Lifts' : "This Week's Targets";
-  document.getElementById('targetsHint').innerHTML = coachMode
-    ? 'Your working weight for each lift in your plan, and what you\'d lift next session on a <strong>Good</strong> day. Update working weights in the Coach tab.'
-    : 'Beginner baseline — everything starts at <strong>3 sets × 10 reps</strong>. Weights climb gently every other week. Adjust anytime in Settings.';
-  document.getElementById('thBaseline').textContent = coachMode ? 'Working weight' : 'Baseline';
-  document.getElementById('thTarget').textContent = coachMode ? 'Next (Good day)' : 'Target this week';
-  tableList.forEach(ex=>{
-    const rxDay = coachMode ? planDays.find(d=>d.lifts.includes(ex.id)) : null;
-    const rx = rxFor(ex, rxDay);
-    const target = coachMode ? suggestFor(ex, rx, 4).weight : targetForExerciseAtWeek(ex, wk);
-    const exLogs = logs.filter(l=>l.exerciseId===ex.id);
-    const best = exLogs.reduce((m,l)=> Math.max(m, ...l.sets.map(s=>s.weight||0)), 0);
-    let statusHtml;
-    if(exLogs.length===0){ statusHtml = '<span class="pill rest">Not started</span>'; }
-    else if(best >= target){ statusHtml = '<span class="pill met">On target</span>'; }
-    else if(best >= target*0.85){ statusHtml = '<span class="pill close">Close</span>'; }
-    else{ statusHtml = '<span class="pill below">Below target</span>'; }
-    const tr = document.createElement('tr');
-    tr.innerHTML = `<td><div style="display:flex;align-items:center;gap:8px;">${iconBadge(ex,'sm')}<span>${ex.name}</span></div></td><td>${coachMode ? rx.sets+' × '+rxRepsText(ex, rx) : prescriptionLabel(ex)}</td><td>${fmtWeight(ex, coachMode ? workingWeight(ex) : ex.baseline)}</td><td><strong>${fmtWeight(ex, target)}</strong></td><td>${exLogs.length? fmtWeight(ex,best) : '—'}</td><td>${statusHtml}</td>`;
-    tbody.appendChild(tr);
-  });
 
   const recentBox = document.getElementById('recentActivity');
   const recentItems = [
@@ -2952,6 +2915,7 @@ function renderSettingsExerciseRow(ex){
         <div>
           <div class="name">${ex.name}<span class="equip-tag">${equipmentLabel(ex.equipment)}</span></div>
           <div class="meta">${prescriptionWithTime(ex)}</div>
+          ${exerciseTargetLineHtml(ex)}
         </div>
         <button class="icon-btn" onclick="deleteExercise('${ex.id}')">🗑</button>
       </div>
@@ -2974,6 +2938,23 @@ function renderSettingsExerciseRow(ex){
       </div>
     </div>
   </div>`;
+}
+// Target / working weight / best logged / status for one exercise — the "backend" numbers
+// that used to fill a big table on the dashboard.
+function exerciseTargetLineHtml(ex){
+  const wk = currentWeekNumber();
+  const target = (ex.workingWeight != null && ex.workingWeight !== '') ? workingWeight(ex) : targetForExerciseAtWeek(ex, wk);
+  const exLogs = logs.filter(l=>l.exerciseId===ex.id);
+  const best = exLogs.reduce((m,l)=> Math.max(m, ...l.sets.map(s=>s.weight||0)), 0);
+  let pill;
+  if(!exLogs.length) pill = '<span class="pill rest">Not started</span>';
+  else if(best >= target) pill = '<span class="pill met">On target</span>';
+  else if(best >= target*0.85) pill = '<span class="pill close">Close</span>';
+  else pill = '<span class="pill below">Below target</span>';
+  const tgtLabel = (ex.workingWeight != null && ex.workingWeight !== '') ? 'Working weight' : 'Target wk ' + wk;
+  return `<div class="meta" style="display:flex;flex-wrap:wrap;gap:4px 10px;align-items:center;margin-top:3px;">
+    <span>${tgtLabel}: <strong style="color:var(--text)">${fmtWeight(ex, target)}</strong></span>
+    <span>Best: <strong style="color:var(--text)">${exLogs.length ? fmtWeight(ex, best) : '—'}</strong></span>${pill}</div>`;
 }
 function toggleRowIconPicker(id){
   openIconPickerId = (openIconPickerId===id) ? null : id;
