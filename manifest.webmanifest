@@ -16,8 +16,8 @@
     { "src": "icons/icon-maskable-512.png", "sizes": "512x512", "type": "image/png", "purpose": "maskable" }
   ],
   "shortcuts": [
-    { "name": "Today's workout", "short_name": "Workout", "url": "./?view=plan", "icons": [{ "src": "icons/icon-192.png", "sizes": "192x192" }] },
-    { "name": "Freestyle", "short_name": "Freestyle", "url": "./?view=freestyle", "icons": [{ "src": "icons/icon-192.png", "sizes": "192x192" }] },
+    { "name": "Start a workout", "short_name": "Workout", "url": "./?view=start", "icons": [{ "src": "icons/icon-192.png", "sizes": "192x192" }] },
+    { "name": "Resistance bands", "short_name": "Bands", "url": "./?view=bands", "icons": [{ "src": "icons/icon-192.png", "sizes": "192x192" }] },
     { "name": "Log a workout", "short_name": "Log", "url": "./?view=log", "icons": [{ "src": "icons/icon-192.png", "sizes": "192x192" }] }
   ]
 }

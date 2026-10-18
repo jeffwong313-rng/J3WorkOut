@@ -3,12 +3,12 @@
    Strategy: network first, fall back to the saved copy. When you're online you always get
    the newest version; when you're offline you get the last version you opened.
    Bump CACHE when the list of files changes. */
-const CACHE = 'j3workout-v1';
+const CACHE = 'j3workout-v4';
 const FILES = [
   './', './index.html', './styles.css', './manifest.webmanifest',
   './icons/icon-192.png', './icons/icon-512.png', './icons/icon-maskable-512.png', './icons/apple-touch-icon.png', './icons/favicon-32.png',
   './js/data.js', './js/state.js', './js/app.js', './js/tools.js', './js/settings.js', './js/coach.js', './js/learn.js',
-  './js/freestyle.js', './js/vacation.js', './js/muscledb.js', './js/workout-ux.js', './js/progress.js', './js/smartplan.js',
+  './js/freestyle.js', './js/vacation.js', './js/muscledb.js', './js/bands.js', './js/splitbuilder.js', './js/workout-ux.js', './js/progress.js', './js/smartplan.js',
   './js/daily.js', './js/polish.js', './js/pwa.js', './js/main.js'
 ];
 

@@ -115,7 +115,7 @@
 
   label{display:block;font-size:12px;color:var(--text-dim);margin-bottom:5px;margin-top:12px;font-weight:600;}
   label:first-child{margin-top:0;}
-  input[type=text],input[type=number],input[type=date],select,textarea{
+  input[type=text],input[type=search],input[type=number],input[type=date],select,textarea{
     width:100%;background:var(--bg-alt);border:1px solid var(--border);color:var(--text);
     border-radius:9px;padding:10px 11px;font-size:14px;outline:none;font-family:inherit;
   }
@@ -643,3 +643,49 @@ body{ padding-top:env(safe-area-inset-top); padding-bottom:env(safe-area-inset-b
 .install-banner{border-color:var(--accent);background:linear-gradient(135deg,rgba(61,220,151,.10),var(--card) 60%);}
 .install-steps{margin:8px 0 0;padding-left:20px;font-size:13px;line-height:1.7;}
 .kbd{display:inline-block;border:1px solid var(--border);border-radius:5px;padding:0 5px;font-size:12px;}
+
+/* ---------- Split Trainer ---------- */
+.sb-check{display:inline-flex;align-items:center;gap:4px;background:var(--card);border:1px dashed var(--border);border-radius:99px;padding:4px 10px;font-size:12px;font-weight:700;color:var(--text-dim);}
+.sb-check.done{border-style:solid;border-color:var(--accent);color:var(--accent);background:rgba(61,220,151,.1);}
+.sb-check.done.extra{border-color:var(--accent2);color:var(--accent2);background:transparent;}
+.sb-check.skipped{opacity:.55;text-decoration:line-through;}
+.opt-tag.owed{border-color:var(--warn);color:var(--warn);}
+.opt-tag.done{border-color:var(--accent);color:var(--accent);}
+.path-card.disabled{opacity:.45;cursor:not-allowed;}
+.path-card.disabled:hover{transform:none;}
+.sb-hist-row{padding:8px 0;border-bottom:1px solid var(--border);font-size:13px;}
+.sb-hist-row:last-child{border-bottom:none;}
+
+/* ---------- Resistance bands ---------- */
+.band-start{display:grid;grid-template-columns:repeat(auto-fit,minmax(230px,1fr));gap:10px;margin-top:12px;}
+.band-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(300px,1fr));gap:12px;margin-top:8px;}
+.band-card{background:var(--card);border:1px solid var(--border);border-radius:14px;padding:12px;}
+.band-card.open{border-color:var(--accent);}
+.band-card-top{display:flex;gap:12px;align-items:center;cursor:pointer;}
+.band-demo{flex:0 0 auto;width:92px;height:92px;color:var(--text);background:var(--bg-alt);border-radius:12px;padding:4px;}
+.band-demo svg{width:100%;height:100%;display:block;overflow:visible;}
+.band-demo.big{width:170px;height:170px;}
+.band-caret{color:var(--text-dim);font-size:14px;}
+.band-card-body{margin-top:12px;border-top:1px solid var(--border);padding-top:12px;}
+.band-cues{margin:6px 0 0 18px;padding:0;font-size:13px;line-height:1.55;}
+.map-chip.prim{border-color:var(--accent);color:var(--accent);}
+.video-link{display:inline-flex;align-items:center;gap:6px;text-decoration:none;}
+.mp-figure svg{overflow:visible;}
+.settings-fold{margin-top:14px;}
+.settings-fold > summary{cursor:pointer;font-weight:700;font-size:13.5px;color:var(--accent);padding:8px 0;list-style:none;}
+.settings-fold > summary::before{content:'▸ ';}
+.settings-fold[open] > summary::before{content:'▾ ';}
+@media (max-width:420px){ .band-grid{grid-template-columns:1fr;} .band-demo.big{width:140px;height:140px;} }
+a.btn.video-link{border-radius:10px;padding:10px 14px;font-weight:700;font-size:13px;background:var(--bg-alt);color:var(--text);border:1px solid var(--border);justify-content:center;}
+a.btn.video-link:hover{border-color:var(--accent);color:var(--accent);}
+.band-card .hint{font-size:12.5px;color:var(--text-dim);}
+#view-bands > div > .hint{font-size:12.5px;color:var(--text-dim);}
+
+/* band level picker */
+.band-pick{background:var(--bg-alt);border:1px solid var(--border);border-radius:11px;padding:10px 12px;margin:10px 0;}
+.band-pick-h{font-weight:700;font-size:13px;}
+.band-dot{display:inline-block;width:10px;height:10px;border-radius:50%;margin-right:6px;vertical-align:-1px;border:1px solid rgba(0,0,0,.25);}
+.chip.band-chip{padding:7px 11px;font-size:12.5px;}
+.live-row{background:rgba(61,220,151,.08);border:1px solid var(--accent);border-radius:11px;padding:10px 12px;margin-bottom:10px;display:flex;justify-content:space-between;align-items:center;gap:10px;flex-wrap:wrap;}
+.start-card .day-title{font-size:15.5px;}
+.backup-banner{border-color:var(--warn);}

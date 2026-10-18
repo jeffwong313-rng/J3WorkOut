@@ -41,12 +41,11 @@
       <button class="nav-top" onclick="toggleNavGroup('train')" aria-haspopup="true"><span>🏋️ Train<span class="nav-caret">▾</span></span><span class="nav-sub-lbl"></span></button>
       <div class="nav-menu" role="menu">
         <div class="nav-menu-h">Train</div>
-        <button class="nav-item" data-view="plan"><span class="ni-ic">📋</span><span><strong>Today's Workout</strong><small>Your plan, guided step by step</small></span></button>
-        <button class="nav-item" data-view="freestyle"><span class="ni-ic">🎲</span><span><strong>Freestyle</strong><small>Choose your own adventure</small></span></button>
-        <button class="nav-item" data-view="vacation"><span class="ni-ic">🌴</span><span><strong>Vacation Circuit</strong><small>No-gym hotel workout + vacation mode</small></span></button>
+        <button class="nav-item" data-view="start"><span class="ni-ic">▶️</span><span><strong>Start a Workout</strong><small>Follow my plan, build a split day, or freestyle</small></span></button>
+        <button class="nav-item" data-view="bands"><span class="ni-ic">🟠</span><span><strong>Resistance Bands</strong><small>Band moves with demos — travel gym</small></span></button>
+        <button class="nav-item" data-view="vacation"><span class="ni-ic">🌴</span><span><strong>Vacation Circuit</strong><small>Bodyweight or band circuit + vacation mode</small></span></button>
         <button class="nav-item" data-view="log"><span class="ni-ic">✍️</span><span><strong>Log a Workout</strong><small>Quickly record any exercise</small></span></button>
-        <button class="nav-item" data-view="mobility"><span class="ni-ic">🧘</span><span><strong>Mobility</strong><small>Guided 6–10 min stretch routines</small></span></button>
-        <button class="nav-item" data-view="warmup"><span class="ni-ic">🤸</span><span><strong>Warm Up</strong><small>10-minute guided routine</small></span></button>
+        <button class="nav-item" data-view="mobility"><span class="ni-ic">🧘</span><span><strong>Mobility</strong><small>Pre-workout warm-up + stretch routines</small></span></button>
         <button class="nav-item" data-view="sprints"><span class="ni-ic">🚴</span><span><strong>Sprints</strong><small>Bike interval (HIIT) timer</small></span></button>
       </div>
     </div>
@@ -65,6 +64,7 @@
       <div class="nav-menu" role="menu">
         <div class="nav-menu-h">Me</div>
         <button class="nav-item" data-view="coach"><span class="ni-ic">🧠</span><span><strong>My Plan &amp; Coach</strong><small>Your plan, weights &amp; tips learned</small></span></button>
+        <button class="nav-item" data-view="split"><span class="ni-ic">🧩</span><span><strong>Split Trainer</strong><small>Build today's PPL / Upper-Lower-Cardio day</small></span></button>
         <button class="nav-item" data-view="settings"><span class="ni-ic">⚙️</span><span><strong>Settings</strong><small>Profile, exercises, workout days, backup</small></span></button>
       </div>
     </div>
@@ -85,9 +85,24 @@
     <div id="coachMain"></div>
   </section>
 
+  <!-- START A WORKOUT (one front door: plan / split day / freestyle) -->
+  <section class="view" id="view-start">
+    <div id="startMain"></div>
+  </section>
+
+  <!-- SPLIT TRAINER (week type → day → pick muscle & move for each exercise) -->
+  <section class="view" id="view-split">
+    <div id="splitMain"></div>
+  </section>
+
   <!-- FREESTYLE (choose-your-own-adventure) -->
   <section class="view" id="view-freestyle">
     <div id="freestyleMain"></div>
+  </section>
+
+  <!-- RESISTANCE BANDS (library with demos + band circuit) -->
+  <section class="view" id="view-bands">
+    <div id="bandsMain"></div>
   </section>
 
   <!-- VACATION (no-gym circuit) -->
@@ -109,7 +124,8 @@
           <h2>1. Pick an exercise</h2>
           <select id="logExerciseFilter" style="width:auto;" onchange="renderExerciseList()"><option value="">All categories</option></select>
         </div>
-        <div class="hint">Grouped by category — tap one to log it. Want a new one, a different icon, or your own custom move? Manage the full library in Settings.</div>
+        <input type="search" id="logSearch" placeholder="🔍 Search exercises (e.g. curl, band, squat)" oninput="renderExerciseList()" autocomplete="off" style="margin-bottom:10px;">
+        <div class="hint">Your recent exercises are at the top. Tap one to log it.</div>
         <div id="exerciseList"></div>
         <button class="btn secondary" style="width:100%;margin-top:10px;" onclick="switchView('settings')">+ Add / Edit Exercises in Settings →</button>
       </div>
@@ -131,10 +147,6 @@
     </div>
   </section>
 
-  <!-- WARM UP (continuous 10-minute guided routine) -->
-  <section class="view" id="view-warmup">
-    <div id="warmupMain"></div>
-  </section>
 
   <!-- SPRINTS (HIIT bike intervals) -->
   <section class="view" id="view-sprints">
@@ -195,7 +207,7 @@
         <div class="stat"><div class="num" id="statWeekCalories" style="color:var(--activity)">0</div><div class="lbl">Calories this week ⚡</div></div>
       </div>
       <div class="card">
-        <div class="stat"><div class="num warn" id="statNextClimb">—</div><div class="lbl">Next overload climb</div></div>
+        <div class="stat"><div class="num warn" id="statReadiness">—</div><div class="lbl">Readiness today</div></div>
       </div>
       <div class="card">
         <div class="stat"><div class="num accent" id="statStreak">0</div><div class="lbl">Day streak 🔥</div></div>
@@ -215,13 +227,6 @@
       <div id="volumeChart" class="bar-chart" style="margin-top:14px;"></div>
     </div>
 
-    <div class="card">
-      <h2>Weekly Breakdown</h2>
-      <table id="weeklyTable">
-        <thead><tr><th>Week</th><th>Sessions</th><th>Exercises</th><th>Total Volume</th><th>Calories</th><th>Top Set</th></tr></thead>
-        <tbody></tbody>
-      </table>
-    </div>
   </section>
 
   <!-- SETTINGS -->
@@ -272,17 +277,23 @@
         <button class="btn secondary" style="flex:0 0 auto;" onclick="toggleExerciseBuilder()" id="builderToggleBtn">+ Add Exercise</button>
       </div>
       <div id="exerciseBuilder" style="display:none;margin-top:14px;"></div>
-      <div class="row" style="margin-top:16px;">
-        <select id="settingsCategoryFilter" onchange="renderSettingsExerciseList()"><option value="">All categories</option></select>
-        <select id="settingsEquipmentFilter" onchange="renderSettingsExerciseList()"><option value="">All equipment</option></select>
-      </div>
-      <div id="settingsExerciseList" style="margin-top:14px;"></div>
+      <details class="settings-fold">
+        <summary>Browse &amp; edit all exercises</summary>
+        <div class="row" style="margin-top:12px;">
+          <select id="settingsCategoryFilter" onchange="renderSettingsExerciseList()"><option value="">All categories</option></select>
+          <select id="settingsEquipmentFilter" onchange="renderSettingsExerciseList()"><option value="">All equipment</option></select>
+        </div>
+        <div id="settingsExerciseList" style="margin-top:14px;"></div>
+      </details>
     </div>
 
     <div class="card" style="margin-bottom:16px;">
       <h2>Muscle Database</h2>
       <div class="hint">The backend sheet behind every suggestion: which muscles each exercise works. <strong>Primary</strong> = main mover (100%), <strong>Secondary</strong> = assists (50%), <strong>Tertiary</strong> = stabilizes (25%). When you mark something sore, exercises that use it as primary or secondary are avoided; marked "rest/injured", anything that touches it is avoided. Tap ✎ to edit a row (great for exercises you add yourself) or export the sheet to Excel / Google Sheets.</div>
-      <div id="muscleDbBox"></div>
+      <details class="settings-fold">
+        <summary>Open the muscle sheet</summary>
+        <div id="muscleDbBox" style="margin-top:12px;"></div>
+      </details>
     </div>
 
     <div class="card" style="margin-bottom:16px;">
@@ -298,9 +309,10 @@
 
     <div class="card">
       <h2>Data</h2>
-      <div class="hint">Your data lives only in this browser's storage — refreshing is safe, but clearing site data, using a different browser, or a new device will not have it. Export a backup regularly.</div>
+      <div class="hint">Your data lives only in this browser's storage — refreshing is safe, but clearing site data, using a different browser, or a new device will not have it. On your phone, <strong>Save to Drive / Files</strong> opens the share sheet so you can drop a backup into Google Drive or iCloud; Home reminds you if it's been more than a week. To restore, use Import on any device.</div>
       <div class="row">
-        <button class="btn secondary" onclick="exportData()">⬇ Export JSON</button>
+        <button class="btn" id="shareBackupBtn" onclick="shareBackup()">☁️ Save to Drive / Files</button>
+        <button class="btn secondary" onclick="exportData()">⬇ Download backup</button>
         <button class="btn secondary" onclick="document.getElementById('importFile').click()">⬆ Import JSON</button>
         <button class="btn danger" onclick="resetAllData()">Reset All Data</button>
       </div>
@@ -327,6 +339,8 @@
 <script src="js/freestyle.js"></script>
 <script src="js/vacation.js"></script>
 <script src="js/muscledb.js"></script>
+<script src="js/bands.js"></script>
+<script src="js/splitbuilder.js"></script>
 <script src="js/workout-ux.js"></script>
 <script src="js/progress.js"></script>
 <script src="js/smartplan.js"></script>
