@@ -75,155 +75,6 @@ function playBeep(){
   }catch(e){ /* audio not available */ }
 }
 
-/* ---------------- Warm Up — continuous 10-minute guided routine ---------------- */
-const WARMUP_TOTAL_SECONDS = 600;
-const WARMUP_SCHEDULE = [
-  { minute:1,  name:'Arm Circles',        category:'shoulders' },
-  { minute:2,  name:'Cat-Cow Stretch',    category:'back' },
-  { minute:3,  name:'Jumping Jacks',      category:'conditioning' },
-  { minute:4,  name:'Plank',              category:'core' },
-  { minute:5,  name:'Push-Ups',           category:'chest' },
-  { minute:6,  name:'Plank',              category:'core' },
-  { minute:7,  name:'Push-Ups',           category:'chest' },
-  { minute:8,  name:'Plank',              category:'core' },
-  { minute:9,  name:'Full Body Stretch',  category:'fullbody' },
-  { minute:10, name:'Cool-Down / Rest',   category:'conditioning' }
-];
-let warmupInterval = null;
-let warmupRunning = false;
-let warmupElapsed = 0; // seconds, 0–600. In-memory only (like the rest timer) — a quick, repeatable routine.
-
-function startWarmup(){
-  warmupElapsed = 0;
-  warmupRunning = true;
-  renderWarmupTab(); // renders the active view now that warmupRunning is true, and syncs the UI
-  beginWarmupInterval();
-}
-function warmupToggleTimer(){
-  if(warmupRunning){ warmupPauseTimer(); }
-  else{ warmupRunning = true; updateWarmupUI(); beginWarmupInterval(); }
-}
-function beginWarmupInterval(){
-  clearInterval(warmupInterval);
-  warmupInterval = setInterval(()=>{
-    const prevMinuteIndex = Math.floor(warmupElapsed/60);
-    warmupElapsed += 1;
-    if(warmupElapsed >= WARMUP_TOTAL_SECONDS){
-      warmupElapsed = WARMUP_TOTAL_SECONDS;
-      warmupRunning = false;
-      clearInterval(warmupInterval);
-      playBeep();
-      renderWarmupTab();
-      return;
-    }
-    const newMinuteIndex = Math.floor(warmupElapsed/60);
-    if(newMinuteIndex !== prevMinuteIndex){
-      playBeep();
-      renderWarmupTab(); // new activity — full re-render swaps name/icon/segment colors
-      return;
-    }
-    updateWarmupUI();
-  }, 1000);
-}
-function warmupPauseTimer(){
-  warmupRunning = false;
-  clearInterval(warmupInterval);
-  updateWarmupUI();
-}
-function resetWarmup(){
-  warmupPauseTimer();
-  warmupElapsed = 0;
-  renderWarmupTab();
-}
-function updateWarmupUI(){
-  const display = document.getElementById('warmupTimerDisplay');
-  if(!display) return; // not currently on-screen
-  const secondsIntoMinute = warmupElapsed % 60;
-  const remainInMinute = warmupElapsed >= WARMUP_TOTAL_SECONDS ? 0 : (60 - secondsIntoMinute);
-  display.textContent = Math.floor(remainInMinute/60).toString().padStart(2,'0') + ':' + Math.floor(remainInMinute%60).toString().padStart(2,'0');
-  const circle = document.getElementById('warmupTimerCircle');
-  if(circle){
-    const CIRC = 2 * Math.PI * 80;
-    const frac = remainInMinute / 60;
-    circle.setAttribute('stroke-dasharray', CIRC);
-    circle.setAttribute('stroke-dashoffset', CIRC * (1-frac));
-  }
-  const btn = document.getElementById('warmupStartBtn');
-  if(btn) btn.textContent = warmupRunning ? 'Pause' : (warmupElapsed>0 ? 'Resume' : 'Start');
-  const totalEl = document.getElementById('warmupTotalRemaining');
-  if(totalEl){
-    const totalRemain = WARMUP_TOTAL_SECONDS - warmupElapsed;
-    const tm = Math.floor(totalRemain/60).toString().padStart(2,'0');
-    const ts = Math.floor(totalRemain%60).toString().padStart(2,'0');
-    totalEl.textContent = tm+':'+ts+' remaining';
-  }
-}
-function renderWarmupTab(){
-  const box = document.getElementById('warmupMain');
-  if(!box) return;
-  if(!warmupRunning && warmupElapsed<=0){
-    box.innerHTML = renderWarmupSetupHtml();
-  }else if(warmupElapsed >= WARMUP_TOTAL_SECONDS){
-    box.innerHTML = renderWarmupCompleteHtml();
-  }else{
-    box.innerHTML = renderWarmupActiveHtml();
-    updateWarmupUI();
-  }
-}
-function renderWarmupSetupHtml(){
-  const rows = WARMUP_SCHEDULE.map(a=>`<div style="display:flex;align-items:center;gap:10px;padding:6px 0;border-bottom:1px solid var(--border);">
-    ${iconBadge({category:a.category},'sm')}<div><strong>Minute ${a.minute}</strong> <span style="color:var(--text-dim);">— ${a.name}</span></div>
-  </div>`).join('');
-  return `<div class="card">
-    <h2>10-Minute Warm-Up</h2>
-    <div class="hint">A continuous, guided warm-up — it runs straight through all 10 minutes on its own, switching activities automatically.</div>
-    <button class="btn" style="width:100%;margin:10px 0 16px;" onclick="startWarmup()">▶ Start Warm-Up</button>
-    <div style="font-size:11.5px;font-weight:700;color:var(--text-dim);text-transform:uppercase;letter-spacing:.03em;margin-bottom:6px;">Schedule</div>
-    ${rows}
-  </div>`;
-}
-function renderWarmupCompleteHtml(){
-  return `<div class="card">
-    <div class="sprint-phase-banner done">Warm-up complete 🎉</div>
-    <div class="hint" style="text-align:center;margin-bottom:0;">Nice work — you're all warmed up and ready to train.</div>
-    <button class="btn" style="width:100%;margin-top:14px;" onclick="resetWarmup()">Do It Again</button>
-  </div>`;
-}
-function renderWarmupActiveHtml(){
-  const minuteIndex = Math.floor(Math.min(warmupElapsed, WARMUP_TOTAL_SECONDS-1) / 60);
-  const activity = WARMUP_SCHEDULE[minuteIndex];
-  const next = WARMUP_SCHEDULE[minuteIndex+1];
-  const segHtml = WARMUP_SCHEDULE.map((a,i)=>{
-    const def = categoryDef(a.category);
-    const cls = i<minuteIndex ? 'done' : (i===minuteIndex ? 'current' : 'upcoming');
-    const opacity = cls==='upcoming' ? 0.25 : 1;
-    return `<div class="progress-seg ${cls}" style="background:${def?def.color:'var(--accent)'};opacity:${opacity};"></div>`;
-  }).join('');
-  const pct = Math.round(((minuteIndex + (warmupElapsed%60)/60) / WARMUP_SCHEDULE.length) * 100);
-
-  return `<div class="card">
-    <div class="progress-track">${segHtml}</div>
-    <div class="progress-label"><span class="progress-pct">${pct}%</span> · Minute ${minuteIndex+1} of ${WARMUP_SCHEDULE.length} · <span id="warmupTotalRemaining"></span></div>
-    <div class="sprint-phase-banner ready" style="display:flex;align-items:center;justify-content:center;gap:10px;">
-      ${iconBadge({category:activity.category})}<span>${activity.name}</span>
-    </div>
-    <div class="sprint-ring-wrap">
-      <div class="sprint-ring">
-        <svg width="180" height="180">
-          <circle cx="90" cy="90" r="80" style="stroke:var(--border)" stroke-width="14" fill="none"/>
-          <circle id="warmupTimerCircle" cx="90" cy="90" r="80" style="stroke:var(--accent)" stroke-width="14" fill="none" stroke-linecap="round"/>
-        </svg>
-        <div class="time" id="warmupTimerDisplay">01:00</div>
-      </div>
-      <div class="row" style="max-width:260px;">
-        <button class="btn" id="warmupStartBtn" onclick="warmupToggleTimer()">Pause</button>
-        <button class="btn secondary" onclick="resetWarmup()">Reset</button>
-      </div>
-    </div>
-    ${next ? `<div class="hint" style="text-align:center;">Up next: <strong style="color:var(--text);">${next.name}</strong></div>` : `<div class="hint" style="text-align:center;">Last stretch!</div>`}
-  </div>`;
-}
-
 /* ---------------- Sprints — HIIT stationary bike intervals ---------------- */
 const SPRINT_PHASE_SECONDS = 60;
 
@@ -566,7 +417,7 @@ function renderHistory(){
           <button class="icon-btn" onclick="deleteLog('${l.id}')">🗑</button>
         </div>
       </div>
-      <div style="font-size:13px;color:var(--text-dim);margin-top:4px;">${setsStr} · <span style="color:var(--activity);font-weight:700;">~${fmtCalories(caloriesForExerciseLog(l))}</span></div>
+      <div style="font-size:13px;color:var(--text-dim);margin-top:4px;">${setsStr}${l.band && bandLevel(l.band) ? ` · ${bandDot(l.band)}${bandLevel(l.band).label} band` : ''} · <span style="color:var(--activity);font-weight:700;">~${fmtCalories(caloriesForExerciseLog(l))}</span></div>
       ${l.notes ? `<div style="font-size:12.5px;margin-top:4px;font-style:italic;color:var(--text-dim)">"${l.notes}"</div>` : ''}
     </div>`;
   }).join('');
@@ -596,6 +447,7 @@ function calendarNextMonth(){ calendarViewDate.setMonth(calendarViewDate.getMont
 
 function dayColorForId(dayId){
   if(dayId === 'freestyle') return 'var(--warn)';
+  if(String(dayId).startsWith('split-') && typeof SB_DAYS !== 'undefined' && SB_DAYS[dayId.slice(6)]){ const def = categoryDef(SB_DAYS[dayId.slice(6)].category); return def ? def.color : 'var(--accent2)'; }
   const day = WORKOUT_DAYS.find(d=>d.id===dayId);
   if(!day) return 'var(--text-dim)';
   const def = categoryDef(day.category);
@@ -687,7 +539,7 @@ function renderCalendarDetail(){
   const taggedDayId = (dayLogs.find(l=>l.dayId) || {}).dayId;
   const day = WORKOUT_DAYS.find(d=>d.id===taggedDayId);
   const niceDate = new Date(calendarSelectedDate+'T00:00:00').toLocaleDateString(undefined,{weekday:'long', month:'long', day:'numeric'});
-  let html = `<div class="card"><div class="flex-between"><h2>${niceDate}</h2>${day?`<span class="badge-week">${day.dayLabel} — ${day.title}</span>`:''}</div>`;
+  let html = `<div class="card"><div class="flex-between"><h2>${niceDate}</h2>${day?`<span class="badge-week">${day.dayLabel} — ${day.title}</span>`:(String(taggedDayId||'').startsWith('split-') && SB_DAYS[taggedDayId.slice(6)] ? `<span class="badge-week">🧩 ${SB_DAYS[taggedDayId.slice(6)].title} day</span>` : '')}</div>`;
   if(dayLogs.length===0 && dayActivities.length===0){
     html += '<div class="empty">Nothing logged this day.</div>';
   }else{
@@ -796,24 +648,5 @@ function renderProgressVolume(){
     return `<div class="bar-col"><div class="bar" style="height:${pct}%;" title="${Math.round(v.vol)} lb"></div><div class="bar-lbl">W${v.week}</div></div>`;
   }).join('') || '<div class="empty">No data yet.</div>';
 
-  // Weekly breakdown table
-  const tbody = document.querySelector('#weeklyTable tbody');
-  tbody.innerHTML = weeks.slice().reverse().map(week=>{
-    const weekLogs = logs.filter(l=>weekNumberForDate(l.date)===week);
-    const weekActivity = activityLogs.filter(a=>weekNumberForDate(a.date)===week);
-    if(weekLogs.length===0 && weekActivity.length===0 && week!==currentWeekNumber()) return '';
-    const exIds = new Set(weekLogs.map(l=>l.exerciseId));
-    const vol = weekLogs.reduce((s,l)=> s + l.sets.reduce((ss,st)=> ss + (st.reps*st.weight||0),0), 0);
-    const cals = weekLogs.reduce((s,l)=> s + caloriesForExerciseLog(l), 0) + weekActivity.reduce((s,a)=> s + caloriesForActivityLog(a), 0);
-    let topSetStr = '—';
-    let topWeight = -1;
-    weekLogs.forEach(l=>{
-      const exx = exercises.find(e=>e.id===l.exerciseId);
-      l.sets.forEach(s=>{
-        if(s.weight>topWeight){ topWeight=s.weight; topSetStr = `${exx?exx.name:'?'} ${s.reps}×${s.weight}`; }
-      });
-    });
-    return `<tr><td><span class="badge-week">Week ${week}</span></td><td>${weekLogs.length}</td><td>${exIds.size}</td><td>${Math.round(vol).toLocaleString()} lb</td><td>${Math.round(cals).toLocaleString()}</td><td style="font-size:12px;">${topSetStr}</td></tr>`;
-  }).join('') || '<tr><td colspan="6" class="empty">No data yet.</td></tr>';
 }
 

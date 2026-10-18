@@ -19,15 +19,60 @@ function toggleNavGroup(id){
   if(opening){ g.classList.add('open'); document.getElementById('navScrim').classList.add('show'); }
 }
 document.addEventListener('keydown', e=>{ if(e.key === 'Escape') closeNavGroups(); });
+// Pages reached from "Start a Workout" light up the Train menu under that entry.
+const NAV_ALIAS = { plan:'start', split:'start', freestyle:'start' };
+const NAV_PAGE_LABEL = { plan:'My Plan', split:'Split Trainer', freestyle:'Freestyle' };
 function updateNavState(name){
+  const navName = NAV_ALIAS[name] || name;
+  let claimed = false; // a page listed in two menus (e.g. Split Trainer) only lights up the first one
   document.querySelectorAll('#mainNav .nav-group').forEach(g=>{
-    const item = g.querySelector(`[data-view="${name}"]`);
+    let item = claimed ? null : g.querySelector(`[data-view="${navName}"]`);
+    if(item) claimed = true;
     const top = g.querySelector('.nav-top');
     top.classList.toggle('active', !!item);
     const lbl = top.querySelector('.nav-sub-lbl');
-    if(g.dataset.group !== 'home' && lbl) lbl.textContent = item ? item.querySelector('strong').textContent : '';
+    if(g.dataset.group !== 'home' && lbl) lbl.textContent = item ? (NAV_PAGE_LABEL[name] || item.querySelector('strong').textContent) : '';
   });
-  document.querySelectorAll('#mainNav .nav-item').forEach(b=> b.classList.toggle('active', b.dataset.view === name));
+  document.querySelectorAll('#mainNav .nav-item').forEach(b=> b.classList.toggle('active', b.dataset.view === navName));
+}
+
+/* ---------------- Start a Workout — one front door for every way to train ---------------- */
+function renderStart(){
+  const box = document.getElementById('startMain'); if(!box) return;
+  const today = todayStr();
+  const plan = loadTodayPlan();
+  const sched = scheduledDayFor(today);
+  const vacay = onVacation(today);
+  const live = [];
+  if(plan && plan.kind === 'lift' && plan.dayId && planHasProgress(plan) && !planIsComplete(plan)){
+    const d = WORKOUT_DAYS.find(x=>x.id===plan.dayId); if(d) live.push(['📋', `${d.title} (my plan) in progress`, "switchView('plan')"]);
+  }
+  if(sbLive()) live.push(['🧩', `${SB_DAYS[sb.session.day].title} day in progress — ${sb.session.picks.length} of ${sb.session.count} done`, "switchView('split')"]);
+  if(fsLive() && fs.history && fs.history.length) live.push(['🎲', `Freestyle in progress — ${fs.history.length} exercise${fs.history.length>1?'s':''} done`, "switchView('freestyle')"]);
+  const nextSplit = sb.style ? SB_DAYS[sbNextDay(sb.style)] : null;
+  const card = (emoji, title, sub, onclick, cls, tag) => `<div class="day-card path-card start-card${cls?' '+cls:''}" onclick="${onclick}"><div class="day-title">${emoji} ${title}${tag?` <span class="opt-tag">${tag}</span>`:''}</div><div class="day-sub">${sub}</div></div>`;
+  const vb = vacay && profile.vacation.bands;
+  const cards = [];
+  if(vacay){
+    cards.push(card('🌴', vb ? 'Band vacation circuit' : 'Vacation circuit', `~22 min guided timer, ${vb ? 'resistance bands' : 'bodyweight + hotel furniture'}. Your gym plan is paused until ${profile.vacation.until}.`, `setVacCircuit('${vb?'bands':'bodyweight'}'); switchView('vacation')`, 'highlight', 'Vacation'));
+  }
+  cards.push(card('📋', 'Follow my plan', sched ? `Today is <strong>${escapeHtml(sched.title)}</strong> — ${escapeHtml(sched.subtitle||'')}. Guided step by step with smart weights.` : coachOn() ? 'Rest day on your plan — pick any of your days if you want to train anyway.' : 'Pick one of your workout days and get walked through it step by step.', "switchView('plan')", !vacay && sched ? 'highlight' : '', !vacay && sched ? 'Today' : ''));
+  cards.push(card('🧩', 'Build a split day', `${nextSplit ? `Up next: <strong>${nextSplit.emoji} ${nextSplit.title}</strong>. ` : ''}Push / Pull / Legs or Upper / Lower / Cardio — you pick the muscle and the move for each exercise.${vacay ? ` Set to ${vb ? 'bands + bodyweight' : 'bodyweight'} while you're away.` : ''}`, "switchView('split')"));
+  cards.push(card('🎲', 'Freestyle', 'No plan — pick a mood, then choose where to go after every exercise. XP, badges and discoveries.', "switchView('freestyle')"));
+  box.innerHTML = `<div class="card" style="margin-bottom:16px;">
+      <h2>▶️ Start a workout</h2>
+      <div class="hint">Three ways to train — same smart weights, recovery rules and history behind all of them.</div>
+      ${live.map(([e,t,on])=>`<div class="today-row live-row"><div><strong>${e} ${t}</strong></div><button class="btn" onclick="${on}">Continue →</button></div>`).join('')}
+      <div class="path-grid">${cards.join('')}</div>
+    </div>
+    <div class="card"><h2>Other ways to move</h2>
+      <div class="chip-row">
+        <button class="chip" onclick="switchView('bands')">🟠 Resistance bands</button>
+        <button class="chip" onclick="switchView('vacation')">🌴 Vacation circuits</button>
+        <button class="chip" onclick="switchView('mobility')">🧘 Mobility & warm-up</button>
+        <button class="chip" onclick="switchView('sprints')">🚴 Sprints</button>
+        <button class="chip" onclick="switchView('log')">✍️ Log a workout</button>
+      </div></div>`;
 }
 
 function switchView(name){
@@ -40,10 +85,12 @@ function switchView(name){
   if(name === 'dashboard') renderDashboard();
   if(name === 'coach') renderCoach();
   if(name === 'freestyle') renderFreestyle();
+  if(name === 'split') renderSplit();
+  if(name === 'start') renderStart();
+  if(name === 'bands') renderBands();
   if(name === 'vacation') renderVacation();
   if(name === 'plan') renderPlanView();
   if(name === 'log') renderLogView();
-  if(name === 'warmup') renderWarmupTab();
   if(name === 'sprints') renderSprintsTab();
   if(name === 'history') renderHistory();
   if(name === 'calendar') renderCalendar();
@@ -60,7 +107,7 @@ function renderDashboard(){
   document.getElementById('headerWeek').textContent = coachOn() ? ('Week ' + planWeekIndex(todayStr()) + (isDeloadWeek() ? ' 🧘' : '')) : ('Week ' + currentWeekNumber());
   document.getElementById('headerDate').textContent = new Date().toLocaleDateString(undefined,{weekday:'short',month:'short',day:'numeric',timeZone:APP_TIMEZONE}) + ' PT';
 
-  const rb = document.getElementById('recapBanner'); if(rb) rb.innerHTML = refreshBannerHtml() + recapBannerHtml();
+  const rb = document.getElementById('recapBanner'); if(rb) rb.innerHTML = backupBannerHtml() + refreshBannerHtml() + recapBannerHtml();
   renderCoachWeekCard();
   renderTodayFocusCard();
   renderHabitsCard();
@@ -76,16 +123,10 @@ function renderDashboard(){
   const weekCalories = weekLogs.reduce((s,l)=> s + caloriesForExerciseLog(l), 0) + weekActivity.reduce((s,a)=> s + caloriesForActivityLog(a), 0);
   document.getElementById('statWeekCalories').textContent = Math.round(weekCalories).toLocaleString();
 
-  const climbIn = weeksUntilNextClimb();
-  const climbLbl = document.getElementById('statNextClimb').nextElementSibling;
-  if(coachOn()){
-    const ci = todayCheckin();
-    document.getElementById('statNextClimb').textContent = ci ? ci.readiness + '/5' : '—';
-    climbLbl.textContent = ci ? 'Readiness today · ' + READINESS_INFO[ci.readiness].label : 'Readiness (check in to set)';
-  } else {
-    document.getElementById('statNextClimb').textContent = climbIn === 0 ? 'This week!' : ('in ' + climbIn + ' wk' + (climbIn>1?'s':''));
-    climbLbl.textContent = 'Next overload climb';
-  }
+  const ci = todayCheckin();
+  const rdEl = document.getElementById('statReadiness');
+  rdEl.textContent = ci ? ci.readiness + '/5' : '—';
+  rdEl.nextElementSibling.textContent = ci ? 'Readiness today · ' + READINESS_INFO[ci.readiness].label : 'Readiness (check in to set)';
   document.getElementById('statStreak').textContent = currentStreak();
 
 
@@ -152,7 +193,9 @@ function renderTodayFocusCard(){
       <div class="row" style="flex-wrap:wrap;gap:8px;">
         ${WORKOUT_DAYS.map(d=>`<button class="btn secondary" style="flex:1 1 140px;" onclick="selectPlanDay('${d.id}'); switchView('plan');">${d.dayLabel} — ${d.title}</button>`).join('')}
         ${ACTIVITY_TYPES.map(a=>`<button class="btn secondary" style="flex:1 1 140px;" onclick="selectActivityDay('${a.id}'); switchView('plan');">${a.title}</button>`).join('')}
+        <button class="btn secondary" style="flex:1 1 140px;" onclick="switchView('split')">🧩 Split Trainer</button>
         <button class="btn secondary" style="flex:1 1 140px;" onclick="switchView('freestyle')">🎲 Freestyle</button>
+        <button class="btn secondary" style="flex:1 1 140px;" onclick="switchView('bands')">🟠 Bands</button>
         <button class="btn secondary" style="flex:1 1 140px;" onclick="switchView('vacation')">🌴 Vacation Circuit</button>
       </div>`;
   }
@@ -364,7 +407,7 @@ function renderPlanView(){
       const orig = exercises.find(e=>e.id===id);
       if(si.skipped) return `<div class="bl-row"><span style="text-decoration:line-through;color:var(--text-dim)">${orig ? orig.name : id}</span><span style="color:var(--warn)">🛌 skipped — ${si.reason||'recovering'}</span></div>`;
       const sg = suggestFor(ex, rx, readiness);
-      return `<div class="bl-row"><span>${rx.emphasis?'<span style="color:var(--warn)">★</span> ':''}${si.swapped ? `🩹 ${ex.name} <span style="color:var(--text-dim);font-size:11.5px;">(instead of ${orig?orig.name:id})</span>` : ex.name}</span><span>${sg.sets} × ${rxRepsText(ex, rx)} @ ${fmtWeight(ex, sg.weight)} · rest ${fmtRest(rx.rest)}</span></div>`;
+      return `<div class="bl-row"><span>${rx.emphasis?'<span style="color:var(--warn)">★</span> ':''}${si.swapped ? `🩹 ${ex.name} <span style="color:var(--text-dim);font-size:11.5px;">(instead of ${orig?orig.name:id})</span>` : ex.name}</span><span>${rxLine(ex, sg.sets, rx, sg.weight)} · rest ${fmtRest(rx.rest)}</span></div>`;
     }).join('');
     const flags = todayFlags();
     const flagTxt = Object.entries(flags).map(([g,l])=> (l==='rest'?'🚫 ':'😣 ') + (recoveryGroup(g)?recoveryGroup(g).label.toLowerCase():g)).join(', ');
@@ -442,7 +485,7 @@ function renderPlanView(){
         </div>
       </div>
       <div class="sugg-box">
-        <div class="sugg-main">Today: <strong>${sug.sets} × ${rxRepsText(ex, rx)}</strong> @ <strong>${fmtWeight(ex, sug.weight)}</strong> · rest <strong>${fmtRest(rx.rest)}</strong></div>
+        <div class="sugg-main">Today: <strong>${rxLine(ex, sug.sets, rx, sug.weight)}</strong> · rest <strong>${fmtRest(rx.rest)}</strong></div>
         <div class="sugg-why">${sug.reasons.join(' ')}</div>
         <div class="row ww-row"><span>${wwLabel}</span><input type="number" step="any" id="wizardWorking" value="${ex.workingWeight!=null?ex.workingWeight:''}" placeholder="${workingWeight(ex)}"><button class="btn ghost" onclick="setWorkingWeightFromWizard('${ex.id}')">Update</button></div>
       </div>
@@ -566,8 +609,8 @@ function wizardSaveExercise(){
   const readiness = todayReadiness();
   const suggested = suggestFor(ex, rx, readiness).weight;
   const award = awardForLog(ex, sets);
-  const log = { id: uid(), exerciseId: ex.id, date: todayStr(), sets, notes:'', dayId: day.id, feel: wizardFeel, readiness, suggested };
-  logs.push(log);
+  const log = { id: uid(), exerciseId: ex.id, date: todayStr(), sets, notes:'', dayId: day.id, feel: wizardFeel, readiness, suggested, band: bandStamp(ex) };
+  logs.push(log); rememberBand(ex);
   updateProgressAfter(ex, sets, rx, wizardFeel, readiness);
   const nextMsg = ex.progress==='up' ? ' · 📈 weight goes up next time (on a good day)' : ex.progress==='down' ? ' · we\'ll back off a step next time' : '';
   wizardFeel = 'right';
@@ -676,20 +719,32 @@ function renderExerciseList(){
     filterSel.dataset.built = '1';
   }
   const filterCat = filterSel ? filterSel.value : '';
-  const list = exercises.filter(ex=> !filterCat || ex.category===filterCat);
+  const searchEl = document.getElementById('logSearch');
+  const q = searchEl ? searchEl.value.trim().toLowerCase() : '';
+  // Every word must match the name, category or equipment ("band row", "db curl").
+  const words = q.split(/\s+/).filter(Boolean).map(w=> w === 'db' ? 'dumbbell' : w);
+  const hay = ex => (ex.name + ' ' + categoryLabel(ex.category) + ' ' + equipmentLabel(ex.equipment)).toLowerCase();
+  const list = exercises.filter(ex=> (!filterCat || ex.category===filterCat) && words.every(w=> hay(ex).includes(w)));
+  const cardHtml = ex=>{
+    const selected = ex.id===selectedExerciseId;
+    return `<div class="exercise-card${selected?' selected':''}" onclick="selectExerciseForLog('${ex.id}')">
+      ${iconBadge(ex)}
+      <div><div class="name">${ex.name}<span class="equip-tag">${equipmentLabel(ex.equipment)}</span></div>
+      <div class="meta">${ex.workingWeight!=null && ex.workingWeight!=='' ? 'working ' + fmtWeight(ex, ex.workingWeight) : 'baseline ' + fmtWeight(ex, ex.baseline)}</div>
+      <div class="presc">${prescriptionWithTime(ex)}</div></div>
+    </div>`;
+  };
+  // Recently logged (most recent first) — only when not searching/filtering.
+  let recentHtml = '';
+  if(!q && !filterCat){
+    const seen = [];
+    logs.slice().sort((a,b)=> b.date.localeCompare(a.date)).forEach(l=>{ if(seen.length < 6 && !seen.includes(l.exerciseId) && exercises.some(e=>e.id===l.exerciseId)) seen.push(l.exerciseId); });
+    if(seen.length) recentHtml = `<div class="category-group-heading" style="color:var(--accent)"><span class="category-dot" style="background:var(--accent)"></span>Recent</div>${seen.map(id=>cardHtml(exercises.find(e=>e.id===id))).join('')}`;
+  }
   const groups = exercisesByCategory(list);
-  box.innerHTML = groups.map(g=>{
-    const cards = g.items.map(ex=>{
-      const selected = ex.id===selectedExerciseId;
-      return `<div class="exercise-card${selected?' selected':''}" onclick="selectExerciseForLog('${ex.id}')">
-        ${iconBadge(ex)}
-        <div><div class="name">${ex.name}<span class="equip-tag">${equipmentLabel(ex.equipment)}</span></div>
-        <div class="meta">baseline ${fmtWeight(ex, ex.baseline)}</div>
-        <div class="presc">${prescriptionWithTime(ex)}</div></div>
-      </div>`;
-    }).join('');
-    return `<div class="category-group-heading" style="color:${g.def.color}"><span class="category-dot" style="background:${g.def.color}"></span>${g.def.label}</div>${cards}`;
-  }).join('') || '<div class="empty">No exercises in this category yet.</div>';
+  const body = groups.map(g=>`<div class="category-group-heading" style="color:${g.def.color}"><span class="category-dot" style="background:${g.def.color}"></span>${g.def.label}</div>${g.items.map(cardHtml).join('')}`).join('');
+  box.innerHTML = (q ? `<div class="hint" style="margin:0 0 6px;">${list.length} match${list.length!==1?'es':''}</div>` : '') + recentHtml +
+    (body || `<div class="empty">${q ? 'No exercises match "' + escapeHtml(q) + '".' : 'No exercises in this category yet.'}</div>`);
 }
 function selectExerciseForLog(id){ selectedExerciseId = id; renderLogView(); }
 
@@ -740,7 +795,7 @@ function saveWorkoutLog(){
   if(sets.length===0){ showToast('Add at least one set with data'); return; }
   const notes = document.getElementById('logNotes').value.trim();
   const award = awardForLog(ex, sets);
-  logs.push({ id: uid(), exerciseId: ex.id, date, sets, notes });
+  logs.push({ id: uid(), exerciseId: ex.id, date, sets, notes, band: bandStamp(ex) }); rememberBand(ex);
   // Record the heaviest set as your working weight if it beats what's on file.
   const topVal = Math.max(...sets.map(st=> ex.unit==='lb' ? (st.weight||0) : (st.weight||st.reps||0)));
   if(topVal > 0 && (ex.workingWeight == null || ex.workingWeight === '' || topVal > +ex.workingWeight)) ex.workingWeight = topVal;

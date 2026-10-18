@@ -473,6 +473,13 @@ function rxRepsText(ex, rx){
   if(ex.unit === 'reps') return 'reps';
   return `${rx.reps} reps`;
 }
+// One readable prescription line: "3 × 8–12 reps @ 25 lb", "3 × 12 reps", "4 × 40s work", "3 × 30s hold".
+function rxLine(ex, sets, rx, w){
+  if(ex.repsAreTime) return `${sets} × ${ex.targetReps} work`;
+  if(ex.unit === 'reps') return `${sets} × ${w} reps`;
+  if(ex.unit === 'seconds') return `${sets} × ${w}s hold`;
+  return `${sets} × ${rx.reps} reps @ ${fmtWeight(ex, w)}`;
+}
 function suggestFor(ex, rx, readiness){
   const base = workingWeight(ex);
   const inc = ex.increment > 0 ? ex.increment : (ex.unit === 'lb' ? 5 : 1);
@@ -730,8 +737,8 @@ function renderCoachWeekCard(){
     const done = vacCircuitsThisWeek(), goal = (profile.vacation.perWeek||3);
     const didToday = activityLogs.some(a=>a.activityId==='vacation' && a.date===today);
     todayHtml = `<div class="today-row"><div><div style="font-weight:800;font-size:15px;">🌴 Vacation mode — ${done} of ${goal} circuits this week</div>
-      <div class="hint" style="margin:0;">${didToday ? 'Today\'s circuit is done ✓ Enjoy your trip.' : 'No gym needed: ~22 min, bodyweight + hotel furniture. Gym days are paused until ' + profile.vacation.until + '.'}</div></div>
-      ${didToday ? '' : `<button class="btn" onclick="switchView('vacation')">Start circuit →</button>`}</div>`;
+      <div class="hint" style="margin:0;">${didToday ? 'Today\'s circuit is done ✓ Enjoy your trip.' : 'No gym needed: ~22 min, ' + (profile.vacation.bands ? 'resistance bands' : 'bodyweight + hotel furniture') + '. Gym days are paused until ' + profile.vacation.until + '.'}</div></div>
+      ${didToday ? '' : `<div class="row" style="flex:0 0 auto;gap:8px;"><button class="btn ghost" onclick="switchView('split')">🧩 Split day</button><button class="btn" onclick="setVacCircuit('${profile.vacation.bands ? 'bands' : 'bodyweight'}'); switchView('vacation')">Start circuit →</button></div>`}</div>`;
   } else if(day && !(trained && planIsComplete(plan))){
     const inProgress = plan && plan.kind==='lift' && plan.dayId===day.id && plan.stepIndex>0;
     const r = ci ? READINESS_INFO[ci.readiness] : null;
@@ -782,7 +789,7 @@ function renderCoachWeekCard(){
 /* ---------------- Coach tab: questionnaire + program view ---------------- */
 let coachEditing = false, coachStep = 0, coachDraft = null;
 const COACH_STEPS = ['about','goal','targets','mode','days','time','review'];
-const ALL_EQUIPMENT = ['speediance','freeweight','machine','bodyweight'];
+const ALL_EQUIPMENT = ['speediance','freeweight','machine','bodyweight','band'];
 function defaultCoachDraft(){
   const c = profile.coach || {};
   return { name:c.name||'', experience:c.experience||'new', goal:c.goal||null, targets:(c.targets||[]).slice(),
@@ -820,9 +827,9 @@ function renderCoach(){
   if(!box) return;
   if(coachEditing || !coachOn()){
     if(!coachDraft) coachDraft = defaultCoachDraft();
-    box.innerHTML = renderCoachQuestionnaire();
+    box.innerHTML = (coachOn() ? '' : sbEntryCardHtml()) + renderCoachQuestionnaire();
   } else {
-    box.innerHTML = renderCoachProgramHtml();
+    box.innerHTML = sbEntryCardHtml() + renderCoachProgramHtml();
   }
 }
 function renderCoachQuestionnaire(){

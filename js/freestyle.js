@@ -195,7 +195,7 @@ function bodyMapSvg(primary, secondary, tertiary){
 function exStatCardHtml(ex, opts){
   opts = opts || {};
   const an = exAnatomy(ex), s = exStats(ex), diff = exDifficulty(ex);
-  const anim = MOVEMENT_ANIMATIONS[ex.category];
+  const anim = demoFor(ex);
   const n = timesDone(ex);
   const tag = n === 0 ? '<span class="nt-badge">🆕 Never tried · +50 XP</span>' : `<span class="tried-badge">Done ${n}×</span>`;
   const diffTxt = ['','Beginner-friendly','Intermediate','Advanced — learn it light'][diff];
@@ -216,6 +216,7 @@ function exStatCardHtml(ex, opts){
       <div><span>Cardio</span>${pips(s.cardio)}</div>
       <div><span>Difficulty</span>${pips(diff,3)}</div>
     </div>
+    ${opts.compact ? '' : `<div style="margin-top:10px;">${videoLinkHtml(ex)}</div>`}
   </div>`;
 }
 
@@ -232,7 +233,7 @@ let fs = loadJSON(LS_KEYS.freestyle, null);
 let fsSetup = null; // in-memory answers while on the setup screen
 function saveFs(){ save(LS_KEYS.freestyle, fs); }
 function fsLive(){ return !!(fs && fs.date === todayStr() && fs.stage !== 'done'); }
-function fsEquip(){ return (coachOn() && profile.coach.equipment && profile.coach.equipment.length) ? profile.coach.equipment : EQUIPMENT_TYPES.map(e=>e.id); }
+function fsEquip(){ const ve = typeof vacEquip === 'function' && vacEquip(); if(ve) return ve; return (coachOn() && profile.coach.equipment && profile.coach.equipment.length) ? profile.coach.equipment : EQUIPMENT_TYPES.map(e=>e.id); }
 function fsRx(ex){
   const r = Object.assign({}, FS_MOODS[(fs && fs.mood) || 'muscle'].rx);
   if(ex.repsAreTime) r.rest = Math.min(r.rest, 30);
@@ -370,7 +371,7 @@ function fsSave(){
   const muscle = fsMuscleOf(ex);
   if(!fs.history.some(h=>h.muscle===muscle) && fs.history.length){ award.xp += 15; award.parts.push('+15 🔀 new muscle combo'); gainXP(15); }
   if(fs.current.fromNew){ game.tryNew = (game.tryNew||0) + 1; }
-  logs.push({ id: uid(), exerciseId: ex.id, date: todayStr(), sets, notes:'', dayId:'freestyle', feel: wizardFeel, readiness });
+  logs.push({ id: uid(), exerciseId: ex.id, date: todayStr(), sets, notes:'', dayId:'freestyle', feel: wizardFeel, readiness, band: bandStamp(ex) }); rememberBand(ex);
   updateProgressAfter(ex, sets, rx, wizardFeel, readiness);
   fs.history.push({ exerciseId: ex.id, muscle, sets: sets.length, xp: award.xp, isNew: award.firstTime, pr: award.pr, mins: fsExMinutes(sets.length, rx.rest), progress: ex.progress });
   fs.xp += award.xp;
@@ -491,7 +492,7 @@ function fsOptionCard(id, isNew){
   const rx = fsRx(ex), sg = suggestFor(ex, rx, todayReadiness());
   return `<div class="fs-option">
     ${exStatCardHtml(ex, { compact: !isNew })}
-    <div class="presc" style="margin:8px 0;">${sg.sets} × ${rxRepsText(ex, rx)} @ ${fmtWeight(ex, sg.weight)} · rest ${fmtRest(rx.rest)}</div>
+    <div class="presc" style="margin:8px 0;">${rxLine(ex, sg.sets, rx, sg.weight)} · rest ${fmtRest(rx.rest)}</div>
     <button class="btn" style="width:100%;" onclick="fsChoose('${ex.id}', ${isNew?'true':'false'})">${isNew ? 'Let\'s try it →' : 'Do this one →'}</button>
   </div>`;
 }
@@ -542,7 +543,7 @@ function fsDoingHtml(){
       </div>
     </div>
     <div class="sugg-box">
-      <div class="sugg-main">Today: <strong>${sug.sets} × ${rxRepsText(ex, rx)}</strong> @ <strong>${fmtWeight(ex, sug.weight)}</strong> · rest <strong>${fmtRest(rx.rest)}</strong></div>
+      <div class="sugg-main">Today: <strong>${rxLine(ex, sug.sets, rx, sug.weight)}</strong> · rest <strong>${fmtRest(rx.rest)}</strong></div>
       <div class="sugg-why">${fs.current.fromNew || neverDone(ex) ? 'First time: pick a weight you could lift ~15 times and focus on form. ' : ''}${sug.reasons.join(' ')}</div>
     </div>
     ${coachingHtml(ex)}

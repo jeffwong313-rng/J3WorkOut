@@ -10,7 +10,7 @@
    don't count as missed or break your streak.
    ===================================================================== */
 const VAC_WORK = 40, VAC_REST = 20, VAC_ROUND_REST = 60, VAC_ROUNDS = 4;
-const VAC_EXERCISES = [
+const VAC_BODYWEIGHT = [
   { id:'squat', exId:'bwsquat', anim:'legs-compound', muscles:['quads','glutes'], focus:'Lower Body & Calorie Burn',
     variants:{ regular:'Bodyweight Squats', jump:'Jump Squats' }, defaultVariant:'regular',
     how:'Stand with your feet shoulder-width apart. Lower your hips back and down until your thighs are parallel to the floor, then press up powerfully. If you want to maximize explosive calorie burn, add a small jump at the top (jump squats). If your knees or joints prefer low impact, stick to fast-paced bodyweight squats.',
@@ -38,6 +38,54 @@ const VAC_EXERCISES = [
     benefit:'Acts as a cardio finisher that spikes your heart rate and melts calories at the end of every round.',
     cue:'Hands under shoulders, hips low, drive the knees fast.' }
 ];
+// Same format, built from resistance-band moves (see js/bands.js for the demos).
+const VAC_BANDS = [
+  { id:'bsquat', exId:'bandsquat', anim:'legs-compound', muscles:['quads','glutes'], focus:'Legs & Glutes',
+    variants:{ only:'Banded Squats' }, defaultVariant:'only',
+    how:'Stand on the middle of the band, feet shoulder-width, handles at your shoulders. Sit your hips back and down, then drive up and finish tall — the band is hardest at the top.',
+    tip:'No handles? Stand on a loop band and hold it at your shoulders like a front squat.',
+    benefit:'Your biggest muscles do the most work, so this burns the most energy of the circuit.',
+    cue:'Sit back and down, drive up, squeeze at the top.' },
+  { id:'bpress', exId:'bandchestpress', anim:'chest', muscles:['chest','shoulders','triceps'], focus:'Chest & Triceps',
+    variants:{ press:'Band Chest Press', pushup:'Banded Push-Ups' }, variantEx:{ pushup:'bandpushup' }, defaultVariant:'press',
+    how:'Anchor the band behind you at chest height (door anchor, or wrap it around your back). Staggered stance, hands beside your chest. Press forward until your arms are nearly straight, then control the band back.',
+    tip:'Door anchor: close it on the hinge side of a door that opens away from you, and tug-test it first.',
+    benefit:'Keeps your pressing strength while you\'re away from a bench.',
+    cue:'Elbows 45°, press out, control it back.' },
+  { id:'brow', exId:'bandrow', anim:'back', muscles:['back','biceps'], focus:'Back & Biceps',
+    variants:{ row:'Band Seated Rows', pulldown:'Band Lat Pulldowns' }, variantEx:{ pulldown:'bandpulldown' }, defaultVariant:'row',
+    how:'Sit tall with your legs straight and the band around the soles of your feet. Pull the handles to your belly button, squeeze your shoulder blades together, then let your arms straighten with control.',
+    benefit:'Balances out the pressing and keeps your posture strong after long flights and car rides.',
+    cue:'Pull to your belly, squeeze your shoulder blades.' },
+  { id:'brdl', exId:'bandrdl', anim:'glutes', muscles:['hamstrings','glutes'], focus:'Hamstrings & Glutes',
+    variants:{ rdl:'Band Romanian Deadlifts', bridge:'Banded Glute Bridges' }, variantEx:{ bridge:'bandglutebridge' }, defaultVariant:'rdl',
+    how:'Stand on the band, handles in front of your thighs, soft knees. Push your hips straight back with a flat back until you feel a hamstring stretch, then squeeze your glutes to stand tall.',
+    benefit:'Works the back of your legs — the side squats miss — and protects your lower back.',
+    cue:'Hips back, flat back, squeeze up.' },
+  { id:'bohp', exId:'bandohp', anim:'shoulders', muscles:['shoulders','triceps'], focus:'Shoulders',
+    variants:{ ohp:'Band Overhead Press', lateral:'Band Lateral Raises' }, variantEx:{ lateral:'bandlateral' }, defaultVariant:'ohp',
+    how:'Stand on the band, handles at shoulder height, palms forward. Squeeze your glutes, press straight overhead, then lower to your shoulders with control.',
+    benefit:'Strong, healthy shoulders — and the last move gets your heart rate back up for the next round.',
+    cue:'Ribs down, press up, lower slow.' }
+];
+const VAC_CIRCUITS = {
+  bodyweight: { emoji:'🏨', name:'Bodyweight "Carb-Eraser" circuit', short:'Bodyweight', list:VAC_BODYWEIGHT, label:'🌴 Vacation Circuit',
+    sub:'No equipment at all — just you and some hotel furniture.' },
+  bands:      { emoji:'🟠', name:'Resistance band circuit', short:'Bands', list:VAC_BANDS, label:'🌴 Band Circuit',
+    sub:'Pack a set of bands (+ door anchor) and get real resistance for every muscle.' }
+};
+function vacCircuitId(){ const c = profile.vacation && profile.vacation.circuit; return VAC_CIRCUITS[c] ? c : 'bodyweight'; }
+function vacList(){ return VAC_CIRCUITS[vacCircuitId()].list; }
+function setVacCircuit(c){
+  if(vac.started && !vac.done){ showToast('Finish or end the current circuit first'); return; }
+  profile.vacation = Object.assign({}, profile.vacation, { circuit: c }); saveAll(); renderVacation();
+}
+function vacExId(v){ const k = vacVariant(v); return (v.variantEx && v.variantEx[k]) || v.exId; }
+function vacDemo(v){
+  const ex = exercises.find(e=>e.id===vacExId(v));
+  const d = ex ? demoFor(ex) : null;
+  return d || MOVEMENT_ANIMATIONS[v.anim] || null;
+}
 function vacVariant(v){ const vp = (profile.vacation && profile.vacation.variants) || {}; return vp[v.id] || v.defaultVariant; }
 function vacName(v){ return v.variants[vacVariant(v)]; }
 function setVacVariant(id, variant){
@@ -45,13 +93,13 @@ function setVacVariant(id, variant){
   profile.vacation.variants = Object.assign({}, profile.vacation.variants, { [id]: variant });
   saveAll(); renderVacation();
 }
-function vacTotalSeconds(){ return VAC_ROUNDS * (VAC_EXERCISES.length*VAC_WORK + (VAC_EXERCISES.length-1)*VAC_REST) + (VAC_ROUNDS-1)*VAC_ROUND_REST; }
+function vacTotalSeconds(){ const n = vacList().length; return VAC_ROUNDS * (n*VAC_WORK + (n-1)*VAC_REST) + (VAC_ROUNDS-1)*VAC_ROUND_REST; }
 function buildVacPhases(){
   const phases = [];
   for(let r=1; r<=VAC_ROUNDS; r++){
-    VAC_EXERCISES.forEach((v,i)=>{
+    vacList().forEach((v,i,list)=>{
       phases.push({ type:'work', round:r, idx:i, dur:VAC_WORK });
-      const last = i === VAC_EXERCISES.length-1;
+      const last = i === list.length-1;
       if(!last) phases.push({ type:'rest', round:r, idx:i+1, dur:VAC_REST });
       else if(r < VAC_ROUNDS) phases.push({ type:'roundrest', round:r, idx:0, dur:VAC_ROUND_REST });
     });
@@ -69,14 +117,27 @@ function startVacationMode(){
   const until = el && el.value;
   if(!until || until < todayStr()){ showToast('Pick the date you\'re back'); return; }
   const pw = document.getElementById('vacPerWeek');
-  profile.vacation = Object.assign({}, profile.vacation, { from: todayStr(), until, perWeek: pw ? +pw.value : 3 });
+  const bandsEl = document.getElementById('vacBands');
+  const bands = bandsEl ? bandsEl.checked : true;
+  // Pre-load the trip: circuit, Split Trainer and Freestyle all switch to what you're packing.
+  profile.vacation = Object.assign({}, profile.vacation, { from: todayStr(), until, perWeek: pw ? +pw.value : 3, bands, circuit: bands ? 'bands' : 'bodyweight' });
+  if(!sbLive()) sbSetup.equip = bands ? 'bands' : 'bodyweight';
   saveAll(); renderVacation(); renderDashboard(); renderCalendar();
-  showToast('🌴 Vacation mode on until ' + until + ' — your streak is safe');
+  showToast('🌴 Vacation mode on until ' + until + (bands ? ' — workouts switched to bands' : ' — workouts switched to bodyweight'));
 }
+function toggleVacBands(){
+  profile.vacation.bands = !profile.vacation.bands;
+  profile.vacation.circuit = profile.vacation.bands ? 'bands' : 'bodyweight';
+  if(!sbLive()) sbSetup.equip = profile.vacation.bands ? 'bands' : 'bodyweight';
+  saveAll(); renderVacation(); renderDashboard();
+}
+// Equipment while travelling (null when not on vacation).
+function vacEquip(){ return onVacation(todayStr()) ? (profile.vacation.bands ? ['band','bodyweight'] : ['bodyweight']) : null; }
 function endVacationMode(){
   if(!profile.vacation) return;
   profile.vacation.until = addDaysToDateStr(todayStr(), -1);
   if(profile.vacation.until < profile.vacation.from) { profile.vacation.from = null; profile.vacation.until = null; }
+  if(!sbLive()) sbSetup.equip = 'usual';
   saveAll(); renderVacation(); renderDashboard(); renderCalendar();
   showToast('Welcome back! Your regular plan picks up today.');
 }
@@ -100,7 +161,7 @@ async function vacKeepAwake(on){
 }
 function vacAnnounce(){
   const p = vac.phases[vac.i];
-  const ex = VAC_EXERCISES[p.idx];
+  const ex = vacList()[p.idx];
   if(p.type === 'work') vacSay(`Go! ${vacName(ex)}.`);
   else if(p.type === 'rest') vacSay(`Rest. Next up: ${vacName(ex)}.`);
   else vacSay(`Round ${p.round} done. Rest one minute. Next: ${vacName(ex)}.`);
@@ -145,8 +206,8 @@ function vacFinish(early){
   const workBlocks = vac.completedWork;
   if(workBlocks > 0){
     const minutes = Math.max(1, Math.round((Date.now() - vac.startedAt)/60000));
-    const rounds = Math.floor(workBlocks / VAC_EXERCISES.length);
-    activityLogs.push({ id: uid(), date: todayStr(), activityId:'vacation', label:'🌴 Vacation Circuit', hours: Math.round(minutes/60*100)/100,
+    const rounds = Math.floor(workBlocks / vacList().length);
+    activityLogs.push({ id: uid(), date: todayStr(), activityId:'vacation', label: VAC_CIRCUITS[vacCircuitId()].label, hours: Math.round(minutes/60*100)/100,
       notes: `${rounds} of ${VAC_ROUNDS} rounds · ${workBlocks} work intervals · ${minutes} min` });
     const xp = workBlocks*5 + (rounds >= VAC_ROUNDS ? 50 : 0);
     const before = levelInfo(game.xp).lvl;
@@ -185,7 +246,7 @@ function vacModeCardHtml(){
     return `<div class="card vac-mode on" style="margin-bottom:16px;">
       <div class="flex-between" style="flex-wrap:wrap;gap:10px;">
         <div><h2>🌴 Vacation mode is on — back ${new Date(v.until+'T00:00:00').toLocaleDateString(undefined,{weekday:'short',month:'short',day:'numeric'})}</h2>
-        <div class="hint" style="margin-bottom:0;">Planned gym days won't count as missed and your streak is paused, not broken. Goal: the circuit ${perWeek}× this week — <strong>${done} done</strong>.</div></div>
+        <div class="hint" style="margin-bottom:0;">Planned gym days won't count as missed and your streak is paused, not broken. Goal: the circuit ${perWeek}× this week — <strong>${done} done</strong>. Split Trainer and Freestyle are set to <strong>${v.bands ? 'bands + bodyweight' : 'bodyweight only'}</strong>. <a href="#" onclick="toggleVacBands(); return false;">${v.bands ? 'No bands with me' : 'I have bands'}</a></div></div>
         <button class="btn ghost" style="flex:0 0 auto;" onclick="endVacationMode()">I'm back — end vacation</button>
       </div>
       <div class="adh-bar"><div style="width:${Math.min(100, Math.round(done/perWeek*100))}%"></div></div>
@@ -199,13 +260,15 @@ function vacModeCardHtml(){
       <div style="flex:1 1 120px;"><label>Circuits per week</label><select id="vacPerWeek"><option value="3"${perWeek===3?' selected':''}>3×</option><option value="4"${perWeek===4?' selected':''}>4×</option></select></div>
       <button class="btn" style="flex:0 0 auto;" onclick="startVacationMode()">🌴 Start vacation mode</button>
     </div>
+    <label class="check-row"><input type="checkbox" id="vacBands" ${v.bands === false ? '' : 'checked'}> 🟠 I'm packing resistance bands — switch Split Trainer, Freestyle and the circuit to band + bodyweight moves while I'm away</label>
   </div>`;
 }
 function vacIntroHtml(){
   const mins = Math.round(vacTotalSeconds()/60);
-  const cards = VAC_EXERCISES.map((v,i)=>{
+  const cards = vacList().map((v,i)=>{
     const prim = [...new Set(v.muscles.flatMap(m=>FS_REGION_MAP[m]||[]))];
-    const anim = MOVEMENT_ANIMATIONS[v.anim];
+    const anim = vacDemo(v);
+    const vex = exercises.find(e=>e.id===vacExId(v));
     const variantBtns = Object.keys(v.variants).length > 1
       ? `<div class="seg-row" style="margin-top:8px;">${Object.entries(v.variants).map(([k,label])=>`<button class="seg-btn${vacVariant(v)===k?' active':''}" onclick="setVacVariant('${v.id}','${k}')">${label}</button>`).join('')}</div>` : '';
     return `<div class="vac-ex">
@@ -218,21 +281,23 @@ function vacIntroHtml(){
       <div class="vac-text"><strong>How to do it:</strong> ${v.how}</div>
       ${v.tip ? `<div class="vac-text"><strong>🏨 Hotel tip:</strong> ${v.tip}</div>` : ''}
       <div class="vac-text vac-benefit"><strong>🌴 Vacation benefit:</strong> ${v.benefit}</div>
+      ${vex ? `<div style="margin-top:10px;">${videoLinkHtml(Object.assign({}, vex, { name: vacName(v) }))}</div>` : ''}
     </div>`;
   }).join('');
   return `${vacModeCardHtml()}
     <div class="card vac-hero" style="margin-bottom:16px;">
-      <h2>🌴 The Vacation "Carb-Eraser" Full-Body Circuit</h2>
-      <div class="hint">No gym needed — just you and some hotel furniture. Do this circuit <strong>3 to 4 times a week</strong> while away.</div>
+      <div class="seg-row" style="margin-bottom:12px;">${Object.entries(VAC_CIRCUITS).map(([k,c])=>`<button class="seg-btn${vacCircuitId()===k?' active':''}" onclick="setVacCircuit('${k}')"><span class="seg-emoji">${c.emoji}</span>${c.short}</button>`).join('')}</div>
+      <h2>🌴 ${VAC_CIRCUITS[vacCircuitId()].name}</h2>
+      <div class="hint">${VAC_CIRCUITS[vacCircuitId()].sub} No gym needed. Do this circuit <strong>3 to 4 times a week</strong> while away.${vacCircuitId()==='bands' ? ' <a href="#" onclick="switchView(\'bands\'); return false;">See every band exercise →</a>' : ''}</div>
       <div class="vac-format">
         <div><strong>${VAC_WORK}s</strong><span>work</span></div>
         <div><strong>${VAC_REST}s</strong><span>rest</span></div>
-        <div><strong>5</strong><span>exercises</span></div>
+        <div><strong>${vacList().length}</strong><span>exercises</span></div>
         <div><strong>${VAC_ROUND_REST}s</strong><span>round rest</span></div>
         <div><strong>${VAC_ROUNDS}</strong><span>rounds</span></div>
         <div><strong>~${mins}</strong><span>minutes</span></div>
       </div>
-      <div class="hint" style="margin-top:10px;">Complete all 5 exercises back-to-back, then rest 60 seconds at the end of the round. The timer beeps and calls out each exercise so you can keep your phone on the floor.</div>
+      <div class="hint" style="margin-top:10px;">Complete all ${vacList().length} exercises back-to-back, then rest 60 seconds at the end of the round. The timer beeps and calls out each exercise so you can keep your phone on the floor.</div>
       <label class="check-row"><input type="checkbox" ${vacVoice?'checked':''} onchange="vacVoice=this.checked"> 🔊 Voice cues (announce each exercise)</label>
       <div class="wizard-actions"><button class="btn" onclick="vacStart()">▶ Start circuit (~${mins} min)</button></div>
     </div>
@@ -240,7 +305,7 @@ function vacIntroHtml(){
 }
 function vacActiveHtml(){
   const p = vac.phases[vac.i];
-  const ex = VAC_EXERCISES[p.idx];
+  const ex = vacList()[p.idx];
   const label = p.type === 'work' ? 'WORK' : p.type === 'rest' ? 'REST — next up' : `ROUND ${p.round} DONE — rest`;
   const cls = p.type === 'work' ? 'sprint' : p.type === 'rest' ? 'rest' : 'ready';
   const color = p.type === 'work' ? 'var(--danger)' : p.type === 'rest' ? 'var(--blue)' : 'var(--warn)';
@@ -249,22 +314,22 @@ function vacActiveHtml(){
     const st = k < workIdxNow ? 1 : (k === workIdxNow && p.type==='work' ? 1 : .22);
     return `<div class="progress-seg${k===workIdxNow && p.type==='work'?' current':''}" style="background:${['var(--accent)','var(--blue)','var(--glute)','var(--tricep)','var(--core)'][x.idx]};opacity:${st}"></div>`;
   }).join('');
-  const anim = MOVEMENT_ANIMATIONS[ex.anim];
+  const anim = vacDemo(ex);
   const nextWork = vac.phases.slice(vac.i+1).find(x=>x.type==='work');
   return `<div class="card">
     <div class="progress-track">${segs}</div>
-    <div class="progress-label"><span class="progress-pct">Round ${p.round} / ${VAC_ROUNDS}</span> · Exercise ${p.idx+1} / 5 · <span id="vacTotal"></span></div>
+    <div class="progress-label"><span class="progress-pct">Round ${p.round} / ${VAC_ROUNDS}</span> · Exercise ${p.idx+1} / ${vacList().length} · <span id="vacTotal"></span></div>
     <div class="sprint-phase-banner ${cls}">${label}</div>
     <div class="vac-live">
       <div class="sprint-ring"><svg width="180" height="180"><circle cx="90" cy="90" r="80" style="stroke:var(--border)" stroke-width="10" fill="none"/><circle id="vacRing" cx="90" cy="90" r="80" stroke="${color}" stroke-width="10" fill="none" stroke-linecap="round"/></svg><div class="time" id="vacTime">${vac.remaining}</div></div>
       <div class="vac-live-ex">
         <div class="ex-stat-name" style="font-size:20px;">${vacName(ex)}</div>
         <div class="hint" style="margin:2px 0 8px;">${ex.focus}</div>
-        ${anim ? `<div class="mp-figure" style="width:90px;height:90px;color:var(--text);">${anim.svg}</div>` : ''}
+        ${anim ? `<div class="mp-figure" style="width:110px;height:110px;color:var(--text);">${anim.svg}</div>` : ''}
         <div class="vac-cue">${ex.cue}</div>
       </div>
     </div>
-    ${p.type === 'work' && nextWork ? `<div class="hint" style="text-align:center;">Then: ${vacName(VAC_EXERCISES[nextWork.idx])}</div>` : ''}
+    ${p.type === 'work' && nextWork ? `<div class="hint" style="text-align:center;">Then: ${vacName(vacList()[nextWork.idx])}</div>` : ''}
     <div class="wizard-actions">
       <button class="btn ghost" onclick="vacEndEarly()">End</button>
       <button class="btn secondary" onclick="vacSkip()">Skip ⏭</button>

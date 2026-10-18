@@ -36,7 +36,7 @@ function renderAppearanceSettings(){
 const TOUR_STEPS = [
   { target:null, title:'Welcome to J3 WorkOut 👋', body:'Your pocket personal trainer. A 30-second tour of where everything lives — you can replay it anytime from Me → Settings.' },
   { target:'[data-group="home"]', title:'🏠 Home', body:'Your day at a glance: this week\'s plan, today\'s workout (or rest-day ideas), daily habits and a tip of the day. Start here every day.' },
-  { target:'[data-group="train"]', title:'🏋️ Train', body:'Today\'s guided workout, 🎲 Freestyle when you want to mix it up, 🌴 the no-gym Vacation circuit, 🧘 mobility, warm-up and sprints.' },
+  { target:'[data-group="train"]', title:'🏋️ Train', body:'▶️ Start a Workout is the front door: follow your plan, build a split day (you pick each move), or go freestyle. Plus 🟠 resistance bands, 🌴 vacation circuits, 🧘 mobility & warm-ups and sprints.' },
   { target:'[data-group="track"]', title:'📈 Track', body:'Personal records, strength trends, your monthly recap, body weight & progress photos, calendar and full history.' },
   { target:'[data-group="me"]', title:'👤 Me', body:'Your plan, working weights and tips you\'ve learned — plus settings, the muscle database and backups. Export a backup every week or two!' },
   { target:null, title:'One habit to start', body:'Open the app, check in (10 seconds), and do what Home tells you. The plan adjusts to you — consistency does the rest.', final:true }

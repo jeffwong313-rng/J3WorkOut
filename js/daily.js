@@ -80,6 +80,19 @@ function renderHabitsCard(){ const el = document.getElementById('habitsCard'); i
 
 /* ---------------- Mobility routines ---------------- */
 const MOBILITY_ROUTINES = [
+  { id:'warmup', name:'Pre-workout warm-up', emoji:'🔥', targets:[],
+    why:'Do this right before lifting: raises your body temperature and takes your joints through the ranges you\'re about to load. Short, dynamic, and it won\'t tire you out. (Do 1–2 light ramp-up sets of your first lift after.)',
+    moves:[
+      { n:'Jumping jacks or march in place', s:60, cue:'Easy pace — just get warm and breathing a little harder.' },
+      { n:'Arm circles', s:30, cue:'Small to big circles, forward then backward.' },
+      { n:'Band pull-aparts (or arm T-raises)', s:40, cue:'Arms straight, pull the band to your chest, squeeze your shoulder blades.' },
+      { n:'Cat-cow', s:40, cue:'Slow spine waves with your breath.' },
+      { n:'World\'s greatest stretch — left', s:35, cue:'Lunge, hand down inside the front foot, rotate and reach up.' },
+      { n:'World\'s greatest stretch — right', s:35, cue:'Other side.' },
+      { n:'Bodyweight squats', s:45, cue:'Smooth reps, go a little deeper each time.' },
+      { n:'Glute bridges', s:30, cue:'Squeeze 1 second at the top.' },
+      { n:'Push-ups (easy) or wall push-ups', s:30, cue:'Half your normal effort — just grooving the movement.' }
+    ] },
   { id:'hips', name:'Hip & glute opener', emoji:'🦵', targets:['hips','glutes','lowerback','hamstrings'],
     why:'Sitting all day tightens hip flexors and switches off glutes. This frees up your squat and takes stress off your lower back.',
     moves:[

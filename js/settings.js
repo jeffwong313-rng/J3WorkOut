@@ -326,22 +326,66 @@ function saveProfile(){
   renderLogView();
 }
 
+function backupData(){
+  return { profile, exercises, logs, activityLogs, workoutDays: WORKOUT_DAYS, sprintSessions, checkins, seenFacts, game, body: bodyLogs, photos: bodyPhotos, daily: dailies, split: sb, exportedAt: new Date().toISOString() };
+}
+function backupFileName(){ return 'j3workout-backup-'+todayStr()+'.json'; }
+function markBackedUp(how){
+  localStorage.setItem(LS_KEYS.lastBackup, new Date().toISOString());
+  localStorage.removeItem(LS_PREFIX+'backupsnooze');
+  renderBackupStatus(); renderDashboard();
+  showToast(how);
+}
 function exportData(){
-  const data = { profile, exercises, logs, activityLogs, workoutDays: WORKOUT_DAYS, sprintSessions, checkins, seenFacts, game, body: bodyLogs, photos: bodyPhotos, daily: dailies, exportedAt: new Date().toISOString() };
-  const blob = new Blob([JSON.stringify(data,null,2)], {type:'application/json'});
+  const blob = new Blob([JSON.stringify(backupData(),null,2)], {type:'application/json'});
   const url = URL.createObjectURL(blob);
   const a = document.createElement('a');
-  a.href = url; a.download = 'j3workout-backup-'+todayStr()+'.json';
+  a.href = url; a.download = backupFileName();
   document.body.appendChild(a); a.click(); a.remove();
   URL.revokeObjectURL(url);
-  localStorage.setItem(LS_KEYS.lastBackup, new Date().toISOString());
-  renderBackupStatus();
-  showToast('Exported');
+  markBackedUp('Backup downloaded ⬇');
+}
+// Phones: opens the share sheet so you can save the backup straight to Google Drive, iCloud Drive / Files, email, etc.
+function canShareBackup(){
+  try{ return !!(navigator.canShare && navigator.canShare({ files:[ new File(['{}'], 'x.json', { type:'application/json' }) ] })); }catch(e){ return false; }
+}
+async function shareBackup(){
+  const file = new File([JSON.stringify(backupData())], backupFileName(), { type:'application/json' });
+  if(!canShareBackup()){ exportData(); return; }
+  try{
+    await navigator.share({ files:[file], title:'J3 WorkOut backup', text:'J3 WorkOut backup ' + todayStr() });
+    markBackedUp('Backup saved ☁️');
+  }catch(e){ if(e && e.name !== 'AbortError') exportData(); }
+}
+function daysSinceBackup(){
+  const last = localStorage.getItem(LS_KEYS.lastBackup);
+  return last ? Math.floor((Date.now() - new Date(last).getTime()) / 86400000) : null;
+}
+function snoozeBackup(){ localStorage.setItem(LS_PREFIX+'backupsnooze', addDaysToDateStr(todayStr(), 3)); renderDashboard(); }
+// Home-screen nudge: once you have something worth losing and it's been a week.
+function backupBannerHtml(){
+  if(TEST_MODE) return '';
+  const n = logs.length + activityLogs.length;
+  if(n < 3) return '';
+  const days = daysSinceBackup();
+  if(days != null && days < 7) return '';
+  const snooze = localStorage.getItem(LS_PREFIX+'backupsnooze');
+  if(snooze && snooze > todayStr()) return '';
+  return `<div class="card backup-banner" style="margin-bottom:16px;">
+    <div style="font-weight:800;">💾 ${days == null ? 'Back up your workouts' : `Last backup was ${days} days ago`}</div>
+    <div class="hint" style="margin:4px 0 10px;">Your ${n} logged sessions only live in this browser. ${canShareBackup() ? 'Tap Save and pick Google Drive (or Files / iCloud) — takes 5 seconds.' : 'Download a copy and drop it in Google Drive or email it to yourself.'}</div>
+    <div class="row" style="gap:8px;flex-wrap:wrap;">
+      ${canShareBackup() ? '<button class="btn" onclick="shareBackup()">☁️ Save to Drive / Files</button>' : ''}
+      <button class="btn ${canShareBackup()?'secondary':''}" onclick="exportData()">⬇ Download</button>
+      <button class="btn ghost" onclick="snoozeBackup()">Later</button>
+    </div></div>`;
 }
 function renderBackupStatus(){
   const el = document.getElementById('backupStatus');
   if(!el) return;
   const last = localStorage.getItem(LS_KEYS.lastBackup);
+  const shareBtn = document.getElementById('shareBackupBtn');
+  if(shareBtn) shareBtn.style.display = canShareBackup() ? '' : 'none';
   if(!last){
     el.style.color = 'var(--warn)';
     el.innerHTML = '⚠️ No backup yet — your data only lives in this browser. Export a copy so a cleared cache or new device can\'t lose it.';
@@ -375,6 +419,7 @@ function importData(evt){
       if(data.body){ bodyLogs = data.body; saveBody(); }
       if(data.photos){ bodyPhotos = data.photos; savePhotos(); }
       if(data.daily){ dailies = data.daily; saveDailies(); }
+      if(data.split){ sb = data.split; saveSb(); }
       if(data.seenFacts){ seenFacts = data.seenFacts; save(LS_KEYS.seenFacts, seenFacts); }
       saveAll();
       renderAll();
@@ -401,6 +446,7 @@ function resetAllData(){
   localStorage.removeItem(LS_KEYS.game); localStorage.removeItem(LS_KEYS.freestyle);
   localStorage.removeItem(LS_KEYS.body); localStorage.removeItem(LS_KEYS.photos); bodyLogs = []; bodyPhotos = []; localStorage.removeItem(LS_KEYS.daily); dailies = {};
   game = { xp:0, badges:[], prs:0, sessions:0, tryNew:0, maxCombo:0 }; fs = null; fsSetup = null;
+  localStorage.removeItem(LS_KEYS.split); sb = { style:null, history:[], session:null }; sbSetup = { style:null, day:null, count:5 };
   coachEditing = false; coachDraft = null;
   profile = JSON.parse(JSON.stringify(DEFAULT_PROFILE));
   exercises = JSON.parse(JSON.stringify(DEFAULT_EXERCISES));

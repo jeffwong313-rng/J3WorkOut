@@ -109,13 +109,17 @@ function fmtSetList(ex, sets){
   return sets.map(s=> `${s.reps}×${s.weight}`).join(', ') + ' lb';
 }
 function lastTimeHtml(ex){
+  return lastTimeLineHtml(ex) + (typeof bandPickerHtml === 'function' ? bandPickerHtml(ex) : '');
+}
+function lastTimeLineHtml(ex){
   const last = lastPerformance(ex);
   if(!last) return `<div class="last-time first">🆕 First time logging this one — today sets your baseline.</div>`;
   const when = new Date(last.date+'T00:00:00').toLocaleDateString(undefined,{ month:'short', day:'numeric' });
   const top = Math.max(...last.sets.map(s=> ex.unit==='lb' ? s.weight : (s.weight||s.reps)));
   const topReps = ex.unit==='lb' ? Math.max(...last.sets.filter(s=>s.weight===top).map(s=>s.reps)) : null;
   const beat = ex.unit==='lb' ? `beat it: ${topReps+1}+ reps at ${top} lb, or go up in weight` : `beat it: ${fmtWeight(ex, top + setStepFor(ex,'weight'))}`;
-  return `<div class="last-time">📅 Last time (${when}): <strong>${fmtSetList(ex, last.sets)}</strong><span> · ${beat}</span></div>`;
+  const band = last.band && typeof bandLevel === 'function' && bandLevel(last.band) ? ` with the ${bandDot(last.band)}${bandLevel(last.band).label} band` : '';
+  return `<div class="last-time">📅 Last time (${when}): <strong>${fmtSetList(ex, last.sets)}</strong>${band}<span> · ${beat}</span></div>`;
 }
 
 /* ---------------- Keep the screen awake during workouts ---------------- */
@@ -133,8 +137,8 @@ function shouldStayAwake(){
   if(!active || document.visibilityState !== 'visible') return false;
   if(active.id === 'view-plan'){ const p = loadTodayPlan(); return !!(p && p.kind === 'lift' && p.dayId && !planIsComplete(p)); }
   if(active.id === 'view-freestyle') return fsLive() && fs.stage !== 'done';
+  if(active.id === 'view-split') return sbLive();
   if(active.id === 'view-vacation') return !!vac.running;
-  if(active.id === 'view-warmup') return !!warmupRunning;
   if(active.id === 'view-sprints') return !!sprintRunning;
   if(active.id === 'view-mobility') return typeof mobRunning !== 'undefined' && !!mobRunning;
   return false;

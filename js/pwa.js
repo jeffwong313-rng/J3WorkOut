@@ -67,5 +67,6 @@ function renderInstallCard(forceHelp){
 // Home-screen shortcuts open straight to a page: ./?view=plan
 function openViewFromUrl(){
   const v = new URLSearchParams(location.search).get('view');
+  if(v === 'warmup'){ switchView('mobility'); return; } // old shortcut: Warm Up now lives in Mobility
   if(v && document.getElementById('view-' + v)) switchView(v);
 }

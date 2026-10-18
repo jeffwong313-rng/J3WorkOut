@@ -42,6 +42,13 @@ let exercises = loadJSON(LS_KEYS.exercises, DEFAULT_EXERCISES);
     save(LS_KEYS.exercises, exercises);
   }
 }
+// Additive: resistance-band exercises (bands update) are added once; pull-aparts move to the new "band" equipment.
+if(!localStorage.getItem(LS_PREFIX+'exadds_bands')){
+  DEFAULT_EXERCISES.filter(d=> d.equipment === 'band').forEach(d=>{ if(!exercises.some(e=>e.id===d.id)) exercises.push(JSON.parse(JSON.stringify(d))); });
+  const pa = exercises.find(e=>e.id==='bandpullapart'); if(pa) pa.equipment = 'band';
+  localStorage.setItem(LS_PREFIX+'exadds_bands','1');
+  save(LS_KEYS.exercises, exercises);
+}
 // Additive: exercises introduced after the schema migration (coach update) are added once.
 if(!localStorage.getItem(LS_PREFIX+'exadds_coach')){
   ['bwsquat'].forEach(id=>{ if(!exercises.some(e=>e.id===id)){ const d = DEFAULT_EXERCISES.find(x=>x.id===id); if(d) exercises.push(JSON.parse(JSON.stringify(d))); } });
@@ -103,16 +110,6 @@ function targetForExerciseAtWeek(ex, week){
   return round2(ex.baseline + climbs * ex.increment);
 }
 function round2(n){ return Math.round(n*100)/100; }
-
-function weeksUntilNextClimb(){
-  const w = currentWeekNumber();
-  // climb happens at the start of every odd->even boundary: weeks 3,5,7...
-  // find next week number where climbCount increases
-  const currentClimb = climbCountForWeek(w);
-  let nextWeek = w;
-  while(climbCountForWeek(nextWeek) === currentClimb){ nextWeek++; }
-  return nextWeek - w;
-}
 
 function fmtWeight(ex, val){
   if(ex.unit === 'reps') return val + ' reps';

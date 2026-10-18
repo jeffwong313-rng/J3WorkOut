@@ -70,6 +70,14 @@ const MUSCLE_DB = {
   // Chest
   bench:'P:chest|S:tri,fdelt|T:upback',
   pushup:'P:chest|S:tri,fdelt|T:abs',
+  // Resistance bands
+  bandsquat:'P:quads,glutes|S:add,hams|T:abs,upback', bandcalfraise:'P:calves', bandlegcurl:'P:hams|T:calves',
+  bandrdl:'P:hams,glutes|S:lowback|T:fore,upback', bandglutebridge:'P:glutes|S:hams,abd', bandlateralwalk:'P:abd|S:glutes|T:quads',
+  bandkickback:'P:glutes|S:hams|T:abs', bandclamshell:'P:abd|S:glutes',
+  bandchestpress:'P:chest|S:tri,fdelt|T:abs', bandpushup:'P:chest|S:tri,fdelt|T:abs', bandfly:'P:chest|S:fdelt',
+  bandrow:'P:lats,upback|S:bi,rdelt', bandpulldown:'P:lats|S:bi,upback', bandfacepull:'P:rdelt,upback|T:sdelt',
+  bandohp:'P:fdelt|S:tri,sdelt|T:abs,upback', bandlateral:'P:sdelt|S:upback', bandcurl:'P:bi|S:fore', bandhammercurl:'P:bi,fore',
+  bandtricepext:'P:tri|T:abs', bandpushdown:'P:tri', bandpallof:'P:obl,abs|T:glutes,fdelt', bandwoodchop:'P:obl|S:abs,fdelt|T:glutes',
   chestpress_speed:'P:chest|S:tri,fdelt', machinechestpress:'P:chest|S:tri,fdelt',
   dbbench:'P:chest|S:tri,fdelt|T:fore',
   cablefly_speed:'P:chest|S:fdelt|T:bi', pecdeck:'P:chest|S:fdelt', dbfly:'P:chest|S:fdelt|T:bi', speediancefly:'P:chest|S:fdelt|T:bi',

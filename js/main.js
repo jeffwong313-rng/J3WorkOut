@@ -8,12 +8,14 @@ function renderAll(){
   renderDashboard();
   renderCoach();
   renderFreestyle();
+  renderSplit();
+  renderStart();
+  renderBands();
   renderVacation();
   renderBody();
   renderMobility();
   renderPlanView();
   renderLogView();
-  renderWarmupTab();
   renderSprintsTab();
   renderHistory();
   renderCalendar();

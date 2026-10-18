@@ -11,7 +11,7 @@
 // prefix so automated tests can never touch your real data.
 const TEST_MODE = /[?&]test=1/.test(location.search);
 const LS_PREFIX = TEST_MODE ? 'ironlogtest_' : 'ironlog_';
-const LS_KEYS = { profile:'ironlog_profile', exercises:'ironlog_exercises', logs:'ironlog_logs', todayPlan:'ironlog_todayplan', lastBackup:'ironlog_lastbackup', activityLogs:'ironlog_activitylogs', workoutDays:'ironlog_workoutdays', sprintSessions:'ironlog_sprintsessions', sprintProgress:'ironlog_sprintprogress', checkins:'ironlog_checkins', prevWorkoutDays:'ironlog_workoutdays_prev', seenFacts:'ironlog_seenfacts', game:'ironlog_game', freestyle:'ironlog_freestyle', body:'ironlog_body', photos:'ironlog_photos', daily:'ironlog_daily' };
+const LS_KEYS = { profile:'ironlog_profile', exercises:'ironlog_exercises', logs:'ironlog_logs', todayPlan:'ironlog_todayplan', lastBackup:'ironlog_lastbackup', activityLogs:'ironlog_activitylogs', workoutDays:'ironlog_workoutdays', sprintSessions:'ironlog_sprintsessions', sprintProgress:'ironlog_sprintprogress', checkins:'ironlog_checkins', prevWorkoutDays:'ironlog_workoutdays_prev', seenFacts:'ironlog_seenfacts', game:'ironlog_game', freestyle:'ironlog_freestyle', body:'ironlog_body', photos:'ironlog_photos', daily:'ironlog_daily', split:'ironlog_split' };
 Object.keys(LS_KEYS).forEach(k=> LS_KEYS[k] = LS_KEYS[k].replace(/^ironlog_/, LS_PREFIX));
 
 // --- Pacific Time pinning ---------------------------------------------------
@@ -66,7 +66,8 @@ const EQUIPMENT_TYPES = [
   { id:'speediance', label:'Speediance' },
   { id:'freeweight',  label:'Free Weight' },
   { id:'machine',     label:'Machine / Cable' },
-  { id:'bodyweight',  label:'Bodyweight' }
+  { id:'bodyweight',  label:'Bodyweight' },
+  { id:'band',        label:'Resistance Band' }
 ];
 function categoryDef(catId){ return CATEGORIES.find(c=>c.id===catId); }
 function categoryLabel(catId){ const c = categoryDef(catId); return c ? c.label : (catId==='activity' ? 'Activity' : catId); }
@@ -166,7 +167,7 @@ const MOVEMENT_ANIMATIONS = {
 };
 function movementPreviewHtml(ex){
   if(profile.showGifs === false) return '';
-  const anim = MOVEMENT_ANIMATIONS[ex.category];
+  const anim = typeof demoFor === 'function' ? demoFor(ex) : MOVEMENT_ANIMATIONS[ex.category];
   if(!anim) return '';
   return `<div class="movement-preview">
     <div class="mp-figure">${anim.svg}</div>
@@ -252,7 +253,7 @@ const DEFAULT_EXERCISES = [
   { id:'speediancebentoverrow', name:'Speediance Bent-Over Row', category:'back', equipment:'speediance', icon:'speediance', baseline:20, increment:5, unit:'lb', targetSets:4, targetReps:'12–15' },
   { id:'invertedrow',    name:'Inverted Row',              category:'back', equipment:'bodyweight', icon:'pullupbar', baseline:10, increment:2, unit:'reps', targetSets:4, targetReps:'12–15' },
   { id:'rackpull',       name:'Rack Pull',                 category:'back', equipment:'freeweight', icon:'barbell', baseline:65, increment:5, unit:'lb', targetSets:4, targetReps:'12–15' },
-  { id:'bandpullapart',  name:'Band Pull-Apart',           category:'back', equipment:'machine', icon:'band', baseline:5, increment:1, unit:'lb', targetSets:4, targetReps:'12–15' },
+  { id:'bandpullapart',  name:'Band Pull-Apart',           category:'back', equipment:'band', icon:'band', baseline:5, increment:1, unit:'lb', targetSets:4, targetReps:'12–15' },
 
   // ================= SHOULDERS =================
   { id:'ohp',            name:'Overhead Press',            category:'shoulders', equipment:'freeweight', icon:'barbell', baseline:35, increment:2.5, unit:'lb', targetSets:3, targetReps:10 },
@@ -318,6 +319,30 @@ const DEFAULT_EXERCISES = [
   { id:'bearcrawl',      name:'Bear Crawl',                  category:'fullbody', equipment:'bodyweight', icon:'fullbody', baseline:30, increment:10, unit:'seconds', targetSets:4, targetReps:'12–15' },
   { id:'burpee',         name:'Burpee',                      category:'fullbody', equipment:'bodyweight', icon:'fullbody', baseline:10, increment:2, unit:'reps', targetSets:4, targetReps:'12–15' },
   { id:'plateoverhead',  name:'Plate Ground-to-Overhead',    category:'fullbody', equipment:'freeweight', icon:'plate', baseline:15, increment:2.5, unit:'lb', targetSets:4, targetReps:'12–15' },
+
+  // ================= RESISTANCE BANDS (travel-friendly) =================
+  { id:'bandsquat', name:'Banded Squat', category:'legs-compound', equipment:'band', icon:'band', baseline:12, increment:2, unit:'reps', targetSets:3, targetReps:'12–20' },
+  { id:'bandcalfraise', name:'Band Calf Raise', category:'legs-isolation', equipment:'band', icon:'band', baseline:15, increment:2, unit:'reps', targetSets:3, targetReps:'15–25' },
+  { id:'bandlegcurl', name:'Band Lying Leg Curl', category:'legs-isolation', equipment:'band', icon:'band', baseline:12, increment:2, unit:'reps', targetSets:3, targetReps:'12–20' },
+  { id:'bandrdl', name:'Band Romanian Deadlift', category:'glutes', equipment:'band', icon:'band', baseline:12, increment:2, unit:'reps', targetSets:3, targetReps:'12–20' },
+  { id:'bandglutebridge', name:'Banded Glute Bridge', category:'glutes', equipment:'band', icon:'band', baseline:15, increment:2, unit:'reps', targetSets:3, targetReps:'15–25' },
+  { id:'bandlateralwalk', name:'Lateral Band Walk', category:'glutes', equipment:'band', icon:'band', baseline:12, increment:2, unit:'reps', targetSets:3, targetReps:'10–15 steps each way' },
+  { id:'bandkickback', name:'Band Glute Kickback', category:'glutes', equipment:'band', icon:'band', baseline:12, increment:2, unit:'reps', targetSets:3, targetReps:'12–20 each side' },
+  { id:'bandclamshell', name:'Banded Clamshell', category:'glutes', equipment:'band', icon:'band', baseline:15, increment:2, unit:'reps', targetSets:3, targetReps:'15–20 each side' },
+  { id:'bandchestpress', name:'Band Chest Press', category:'chest', equipment:'band', icon:'band', baseline:12, increment:2, unit:'reps', targetSets:3, targetReps:'12–20' },
+  { id:'bandpushup', name:'Banded Push-Up', category:'chest', equipment:'band', icon:'band', baseline:8, increment:2, unit:'reps', targetSets:3, targetReps:'8–15' },
+  { id:'bandfly', name:'Band Chest Fly', category:'chest', equipment:'band', icon:'band', baseline:12, increment:2, unit:'reps', targetSets:3, targetReps:'12–20' },
+  { id:'bandrow', name:'Band Seated Row', category:'back', equipment:'band', icon:'band', baseline:12, increment:2, unit:'reps', targetSets:3, targetReps:'12–20' },
+  { id:'bandpulldown', name:'Band Lat Pulldown', category:'back', equipment:'band', icon:'band', baseline:12, increment:2, unit:'reps', targetSets:3, targetReps:'12–20' },
+  { id:'bandfacepull', name:'Band Face Pull', category:'back', equipment:'band', icon:'band', baseline:15, increment:2, unit:'reps', targetSets:3, targetReps:'15–20' },
+  { id:'bandohp', name:'Band Overhead Press', category:'shoulders', equipment:'band', icon:'band', baseline:12, increment:2, unit:'reps', targetSets:3, targetReps:'12–20' },
+  { id:'bandlateral', name:'Band Lateral Raise', category:'shoulders', equipment:'band', icon:'band', baseline:12, increment:2, unit:'reps', targetSets:3, targetReps:'12–20' },
+  { id:'bandcurl', name:'Band Bicep Curl', category:'biceps', equipment:'band', icon:'band', baseline:12, increment:2, unit:'reps', targetSets:3, targetReps:'12–20' },
+  { id:'bandhammercurl', name:'Band Hammer Curl', category:'biceps', equipment:'band', icon:'band', baseline:12, increment:2, unit:'reps', targetSets:3, targetReps:'12–20' },
+  { id:'bandtricepext', name:'Band Overhead Tricep Extension', category:'triceps', equipment:'band', icon:'band', baseline:12, increment:2, unit:'reps', targetSets:3, targetReps:'12–20' },
+  { id:'bandpushdown', name:'Band Tricep Pushdown', category:'triceps', equipment:'band', icon:'band', baseline:15, increment:2, unit:'reps', targetSets:3, targetReps:'15–20' },
+  { id:'bandpallof', name:'Band Pallof Press', category:'core', equipment:'band', icon:'band', baseline:10, increment:2, unit:'reps', targetSets:3, targetReps:'10–12 each side' },
+  { id:'bandwoodchop', name:'Band Woodchopper', category:'core', equipment:'band', icon:'band', baseline:12, increment:2, unit:'reps', targetSets:3, targetReps:'10–12 each side' },
 
   // ================= CONDITIONING / CARDIO =================
   { id:'kbswing',        name:'Kettlebell / Dumbbell Swing', category:'conditioning', equipment:'freeweight', icon:'kettlebell', baseline:15, increment:2.5, unit:'lb', targetSets:4, targetReps:'40s', repsAreTime:true },
