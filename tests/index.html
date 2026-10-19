@@ -196,6 +196,114 @@ test('refresh cycle rotates exercise choices', ()=>{
   eq(r, true);
 });
 
+group('Split Trainer');
+test('every split focus has options with all equipment', ()=>{
+  const r = app(`const empty = []; const s = {day:'push', picks:[]};
+    Object.keys(SB_FOCUS).forEach(f=>{ if(!exercises.some(ex=>SB_FOCUS[f].match(ex))) empty.push(f); }); empty`);
+  eq(r, []);
+});
+test('signature moves land in the right muscle', ()=>{
+  const r = app(`const of = id => Object.keys(SB_FOCUS).filter(f=>f!=='back' && SB_FOCUS[f].match(exercises.find(e=>e.id===id)));
+    [of('skullcrusher'), of('bench'), of('lateralraise'), of('latpull'), of('row'), of('facepull'), of('hipthrust'), of('dbrdl'), of('calfraise'), of('assaultbike')]`);
+  eq(r, [['triceps'],['chest'],['shoulders'],['lats'],['rows'],['reardelts'],['glutes'],['hamstrings'],['calves'],['engine']]);
+});
+test('5-exercise push day always covers chest, shoulders and triceps', ()=>{
+  const r = app(`const s = {date:todayStr(), style:'ppl', day:'push', count:5, picks:[]};
+    // Greedy user: keeps picking chest whenever allowed.
+    for(let i=0;i<5;i++){ const ch = sbFocusChoices(s).filter(c=>c.allowed); const f = ch.find(c=>c.focus==='chest') ? 'chest' : ch[0].focus;
+      const id = sbRecommend(f, s)[0]; s.picks.push({focus:f, exerciseId:id, sets:3, logged:true}); }
+    [s.picks.filter(p=>p.focus==='chest').length, ['chest','shoulders','triceps'].every(f=>sbCovered(s,f)), new Set(s.picks.map(p=>p.exerciseId)).size]`);
+  eq(r, [3, true, 5]);
+});
+test('upper day: 5 picks = one of each muscle (no spare slots)', ()=>{
+  const r = app(`const s = {date:todayStr(), style:'ulc', day:'upper', count:5, picks:[]};
+    sbFocusChoices(s).filter(c=>c.allowed).map(c=>c.focus).sort().join()`);
+  eq(r, 'back,biceps,chest,shoulders,triceps');
+});
+test('options are 3 distinct exercises for the chosen muscle', ()=>{
+  const r = app(`const s = {date:todayStr(), style:'ppl', day:'push', count:5, picks:[]}; const o = sbRecommend('triceps', s);
+    [o.length, new Set(o).size, o.every(id=>exercises.find(e=>e.id===id).category==='triceps')]`);
+  eq(r, [3, 3, true]);
+});
+test('rotation suggests the next day', ()=>{
+  const r = app(`const saved = sb.history; sb.history = [{date:todayStr(), style:'ppl', day:'pull', exIds:[]}];
+    const a = [sbNextDay('ppl'), sbNextDay('ulc')]; sb.history = [{date:todayStr(), style:'ppl', day:'legs', exIds:[]}]; a.push(sbNextDay('ppl')); sb.history = saved; a`);
+  eq(r, ['legs', 'upper', 'push']);
+});
+test('sore triceps: push day skips triceps instead of getting stuck', ()=>{
+  const r = app(`const c = {id:'x', date:todayStr(), feel:3, sleep:0, sore:0, recovering:{triceps:'rest'}, readiness:3}; checkins.push(c);
+    const s = {date:todayStr(), style:'ppl', day:'push', count:5, picks:[]};
+    const out = [sbSkippedRequired(s).includes('triceps'), sbUncovered(s).includes('triceps')]; checkins = checkins.filter(x=>x!==c); out`);
+  eq(r[0], true); eq(r[1], false);
+});
+
+group('Resistance bands');
+test('every band exercise has a demo, coaching cues and muscles', ()=>{
+  const r = app(`exercises.filter(e=>e.equipment==='band').filter(e=>!BAND_DEMOS[e.id] || !EXERCISE_COACHING[e.id] || !exMuscles(e).P.length).map(e=>e.id)`);
+  eq(r, []);
+  assert(app(`exercises.filter(e=>e.equipment==='band').length`) >= 20, 'expected 20+ band exercises');
+});
+test('band demos render as animated SVG with the band drawn', ()=>{
+  const r = app(`Object.keys(BAND_DEMOS).filter(id=>{ const s = bandDemoSvg(id); return !(s.includes('<animate') && (s.includes(BAND_COLOR))); })`);
+  eq(r, []);
+});
+test('band circuit: 5 moves, all real band exercises, variants swap the demo', ()=>{
+  const r = app(`const saved = profile.vacation; profile.vacation = {circuit:'bands'};
+    const out = [vacList().length, vacList().every(v=>exercises.find(e=>e.id===vacExId(v) && e.equipment==='band'))];
+    profile.vacation = {circuit:'bands', variants:{bpress:'pushup'}}; out.push(vacExId(VAC_BANDS[1]));
+    profile.vacation = saved; out`);
+  eq(r, [5, true, 'bandpushup']);
+});
+test('bands-only split days only offer band / bodyweight moves and still cover upper day', ()=>{
+  const r = app(`const s = {date:todayStr(), style:'ulc', day:'upper', count:5, equip:'bands', picks:[]};
+    const ok = ['chest','back','shoulders','biceps','triceps'].every(f=>sbCandidates(f, s).length && sbCandidates(f, s).every(e=>['band','bodyweight'].includes(e.equipment)));
+    [ok, sbSkippedRequired(s)]`);
+  eq(r, [true, []]);
+});
+test('video link searches for the exercise', ()=>{
+  assert(app(`videoSearchUrl(exercises.find(e=>e.id==='bandrow'))`).includes('Band%20Seated%20Row'));
+});
+test('warm-up lives in Mobility now', ()=>{
+  eq(app(`!!MOBILITY_ROUTINES.find(r=>r.id==='warmup') && !document.getElementById('view-warmup')`), true);
+});
+
+group('Band levels, search, start, vacation');
+test('band level: topping the rep range suggests the next band up', ()=>{
+  const r = app(`logs.length = 0; const ex = exercises.find(e=>e.id==='bandrow'); const d = addDaysToDateStr(todayStr(),-2);
+    const out = [bandSuggestion(ex).level];
+    logs.push({id:'b1', exerciseId:'bandrow', date:d, band:'medium', feel:'right', sets:[{reps:20,weight:0},{reps:20,weight:0},{reps:21,weight:0}]});
+    out.push(bandSuggestion(ex).level, bandSuggestion(ex).up);
+    logs[0].sets[2].reps = 15; out.push(bandSuggestion(ex).level);
+    logs[0].feel = 'hard'; logs[0].sets[2].reps = 9; out.push(bandSuggestion(ex).level);
+    logs.length = 0; out`);
+  eq(r, ['light', 'heavy', true, 'medium', 'light']);
+});
+test('band chosen on screen is stamped on the log', ()=>{
+  const r = app(`const ex = exercises.find(e=>e.id==='bandcurl'); setBandPick('bandcurl','heavy'); const a = bandStamp(ex); rememberBand(ex);
+    [a, ex.bandLevel, bandStamp(exercises.find(e=>e.id==='bench'))]`);
+  eq(r, ['heavy', 'heavy', undefined]);
+});
+test('log search matches every word across name, category and equipment', ()=>{
+  const r = app(`switchView('log'); const s = document.getElementById('logSearch'); s.value = 'band row'; renderExerciseList();
+    const names = [...document.querySelectorAll('#exerciseList .exercise-card .name')].map(n=>n.firstChild.textContent);
+    s.value = ''; renderExerciseList(); names`);
+  assert(r.includes('Band Seated Row'), 'expected Band Seated Row in ' + r.join(', '));
+  assert(!r.includes('Bench Press'));
+});
+test('Start a Workout hub offers plan, split day and freestyle', ()=>{
+  const r = app(`switchView('start'); [...document.querySelectorAll('#startMain .start-card .day-title')].map(e=>e.textContent)`);
+  assert(r.some(t=>t.includes('Follow my plan')) && r.some(t=>t.includes('Build a split day')) && r.some(t=>t.includes('Freestyle')), r.join(' | '));
+  eq(app(`switchView('split'); document.querySelector('#mainNav [data-group="train"] .nav-top').classList.contains('active')`), true);
+});
+test('vacation mode switches workouts to what you packed', ()=>{
+  const r = app(`const saved = profile.vacation;
+    profile.vacation = { from: todayStr(), until: addDaysToDateStr(todayStr(), 5), bands:true, circuit:'bands' };
+    const a = [fsEquip().join(), sbEquip({equip:null}).join()]; sbSetup.equipTouched = false; renderSplit(); a.push(sbSetup.equip);
+    profile.vacation.bands = false; a.push(fsEquip().join());
+    profile.vacation = saved; sbSetup.equip = 'usual'; a`);
+  eq([r[0], r[2], r[3]], ['band,bodyweight', 'bands', 'bodyweight']);
+});
+
 group('Daily habits & mobility');
 test('habit streak counts consecutive logged days', ()=>{
   const r = app(`const t = todayStr(); dailies = {}; dailies[t] = {sleep:7}; dailies[addDaysToDateStr(t,-1)] = {steps:5000}; dailies[addDaysToDateStr(t,-3)] = {sleep:8};
