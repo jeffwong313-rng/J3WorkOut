@@ -3,6 +3,7 @@
 A personal workout coach that runs entirely in your browser — no account, no server, no tracking. Your data lives in the browser's local storage; export a JSON backup from **Me → Settings → Data**.
 
 ## Features
+- **Push / Pull / Legs**: Jeff's plan from his Work Out Plan sheet: 6 sets × 10 reps on every exercise, with a fixed 2:00 rest that starts after each ✓'d set and again when you move to the next exercise. Pick any day in any order (e.g. push, pull, rest, push, pull).
 - **Coach**: answers a few questions, builds a weekly plan around the days you pick, and adjusts weights to how you feel each day (daily check-in + double progression). Deload weeks, plateau detection and an 8-week plan refresh keep it working long-term.
 - **Fast logging**: −/+ steppers, a ✓ per set that starts the rest timer, "last time" numbers to beat, screen kept awake, undo instead of pop-ups.
 - **Freestyle**: choose-your-own-adventure workouts with XP, levels, badges and an exercise collection.

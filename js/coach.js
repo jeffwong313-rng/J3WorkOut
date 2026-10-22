@@ -465,7 +465,10 @@ function workingWeight(ex){
 }
 function rxFor(ex, day){
   const r = day && day.rx && day.rx[ex.id];
-  return r ? r : { sets: ex.targetSets || 3, reps: ex.targetReps != null ? ex.targetReps : 10, rest: 90 };
+  if(r) return r;
+  // Days with a fixed prescription (Push / Pull / Legs: 6 × 10, 2:00 rest) apply it to swaps and newly added exercises too.
+  if(day && day.defaultRx) return Object.assign({}, day.defaultRx);
+  return { sets: ex.targetSets || 3, reps: ex.targetReps != null ? ex.targetReps : 10, rest: 90 };
 }
 function rxRepsText(ex, rx){
   if(ex.repsAreTime) return `${ex.targetReps} work`;
@@ -565,6 +568,11 @@ const CUE_PLANK = { setup:'Forearms under your shoulders, body straight from hea
 const CUE_CABLECRUNCH = { setup:'Kneel facing the cable, rope held beside your head.', cues:['Curl your ribs toward your hips — round your spine.','Squeeze your abs at the bottom.','Return slowly.'], avoid:'Just bending at the hips — the movement is your spine curling.' };
 
 const EXERCISE_COACHING = {
+  speediancedoublerow:CUE_SEATEDROW, speediancefacepull:CUE_FACEPULL, fullextcurl:{ setup:'Stand tall, dumbbells at your sides, palms forward.', cues:['Start every rep from arms fully straight — that full stretch is the point.','Curl up without swinging, squeeze at the top.','Lower slowly all the way back to straight arms.'], avoid:'Stopping short at the bottom or using your back to swing the weight.' },
+  weightedrussiantwist:{ setup:'Sit with knees bent, lean back about 45°, hold a dumbbell or plate at your chest.', cues:['Rotate your shoulders side to side — follow the weight with your eyes.','Keep your chest up and back flat.','One tap each side = 1 rep… or count each side, just stay consistent.'], avoid:'Rounding your lower back or just swinging your arms without turning your torso.' },
+  speedianceclosegrip:CUE_BENCH, speediancebench:CUE_BENCH, speediancetricpulldown:CUE_PUSHDOWN,
+  hammercurlpress:{ setup:'Stand tall, dumbbells at your sides, palms facing each other.', cues:['Hammer curl the dumbbells up to your shoulders.','Press straight overhead, keeping palms facing in.','Lower back to your shoulders, then uncurl to your sides with control.'], avoid:'Leaning back to press — squeeze your glutes and brace your stomach.' },
+  speediancerdl:CUE_RDL, speediancecalfraise:CUE_CALF, weightedlunge:CUE_LUNGE,
   gobletsquat:CUE_SQUAT, speediancesquat:CUE_SQUAT, frontsquat:CUE_SQUAT, bwsquat:CUE_SQUAT, sumosquat:CUE_SQUAT,
   squat:{ setup:'Bar on your upper back (not your neck), hands just outside shoulders, feet shoulder-width.', cues:CUE_SQUAT.cues, avoid:'Adding weight before the movement feels automatic. Use safety pins in the rack.' },
   legpress:CUE_LEGPRESS, hacksquat:CUE_LEGPRESS, 'speedianceleg press':CUE_LEGPRESS,

@@ -331,31 +331,48 @@ const DEFAULT_EXERCISES = [
   { id:'sledpush',       name:'Sled Push',                   category:'conditioning', equipment:'machine', icon:'rack', baseline:30, increment:10, unit:'seconds', targetSets:4, targetReps:'30s', repsAreTime:true },
   { id:'highknees',      name:'High Knees',                  category:'conditioning', equipment:'bodyweight', icon:'stopwatch', baseline:30, increment:10, unit:'seconds', targetSets:4, targetReps:'30s', repsAreTime:true },
   { id:'jumpingjacks',   name:'Jumping Jacks',               category:'conditioning', equipment:'bodyweight', icon:'stopwatch', baseline:30, increment:10, unit:'seconds', targetSets:4, targetReps:'30s', repsAreTime:true },
-  { id:'speedianceconditioning', name:'Speediance Conditioning Circuit', category:'conditioning', equipment:'speediance', icon:'speediance', baseline:30, increment:10, unit:'seconds', targetSets:4, targetReps:'30s', repsAreTime:true }
+  { id:'speedianceconditioning', name:'Speediance Conditioning Circuit', category:'conditioning', equipment:'speediance', icon:'speediance', baseline:30, increment:10, unit:'seconds', targetSets:4, targetReps:'30s', repsAreTime:true },
+
+  // ================= ADDED FROM JEFF'S PUSH / PULL / LEGS SHEET =================
+  { id:'speediancedoublerow',   name:'Speediance Double Seated Natural Row', category:'back', equipment:'speediance', icon:'speediance', baseline:30, increment:5, unit:'lb', targetSets:6, targetReps:10 },
+  { id:'speediancefacepull',    name:'Speediance Face Pull',          category:'back', equipment:'speediance', icon:'speediance', baseline:15, increment:2.5, unit:'lb', targetSets:6, targetReps:10 },
+  { id:'fullextcurl',           name:'Full Extension Bicep Curl',     category:'biceps', equipment:'freeweight', icon:'dumbbell', baseline:10, increment:2.5, unit:'lb', targetSets:6, targetReps:10 },
+  { id:'weightedrussiantwist',  name:'Weighted Russian Twist',        category:'core', equipment:'freeweight', icon:'medball', baseline:10, increment:2.5, unit:'lb', targetSets:6, targetReps:10 },
+  { id:'speedianceclosegrip',   name:'Speediance Close-Grip Bench Press', category:'triceps', equipment:'speediance', icon:'speediance', baseline:20, increment:5, unit:'lb', targetSets:6, targetReps:10 },
+  { id:'speediancebench',       name:'Speediance Bench Press',        category:'chest', equipment:'speediance', icon:'speediance', baseline:30, increment:5, unit:'lb', targetSets:6, targetReps:10 },
+  { id:'speediancetricpulldown',name:'Speediance Tricep Pull Down',   category:'triceps', equipment:'speediance', icon:'speediance', baseline:15, increment:2.5, unit:'lb', targetSets:6, targetReps:10 },
+  { id:'hammercurlpress',       name:'Hammer Curl to Press',          category:'shoulders', equipment:'freeweight', icon:'dumbbell', baseline:10, increment:2.5, unit:'lb', targetSets:6, targetReps:10 },
+  { id:'speediancerdl',         name:'Speediance Romanian Deadlift',  category:'glutes', equipment:'speediance', icon:'speediance', baseline:30, increment:5, unit:'lb', targetSets:6, targetReps:10 },
+  { id:'speediancecalfraise',   name:'Speediance Standing Calf Raise', category:'legs-isolation', equipment:'speediance', icon:'speediance', baseline:30, increment:5, unit:'lb', targetSets:6, targetReps:10 },
+  { id:'weightedlunge',         name:'Weighted Lunge',                category:'legs-compound', equipment:'freeweight', icon:'dumbbell', baseline:15, increment:2.5, unit:'lb', targetSets:6, targetReps:10 },
 ];
 
 /* ---------------- Workout split — fully customizable in Settings ----------------
    DEFAULT_WORKOUT_DAYS is only the seed data. The live WORKOUT_DAYS list (loaded
    below, after LS_KEYS/loadJSON exist) is what's actually read and edited — so
    renaming a day, changing its exercises, or adding/removing whole days persists. */
+// Jeff's Push / Pull / Legs (from his Work Out Plan sheet): every exercise is 6 sets × 10
+// reps with a fixed 2:00 rest between sets and between exercises (autoRest).
+const PPL_RX = { sets:6, reps:10, rest:120 };
+function pplRx(lifts){ const o = {}; lifts.forEach(id=> o[id] = Object.assign({}, PPL_RX)); return o; }
+const PPL_PUSH_LIFTS = ['speedianceclosegrip','speediancebench','speediancefly','speediancetricpulldown','hammercurlpress','skullcrusher','plank'];
+const PPL_PULL_LIFTS = ['latpull','speediancedoublerow','speediancefacepull','fullextcurl','weightedrussiantwist'];
+const PPL_LEGS_LIFTS = ['speediancesquat','speediancerdl','speediancecalfraise','weightedlunge','sumosquat','hanginglegraise'];
 const DEFAULT_WORKOUT_DAYS = [
   {
-    id:'push', dayLabel:'Day 1', title:'Push', subtitle:'Chest, Shoulders, Triceps', duration:'60 min', badge:'Non-activity day', category:'chest',
+    id:'push', dayLabel:'Day 1', title:'Push', subtitle:'Chest, Shoulders, Triceps, Core', duration:'~105 min', badge:'6 × 10 · 2:00 rest', category:'chest',
     warmup:{ duration:'5 min', description:'Arm circles, band pull-aparts, light ramp-up sets' },
-    lifts:['chestpress_speed','dbshoulder','cablefly_speed','inclinedbpress','lateralraise','tricepspushdown'],
-    finisher:{ title:'Finisher', duration:'15 min', description:'Fast-paced circuit — push-ups, jump squats, mountain climbers (40s work / 20s rest)' }
+    lifts:PPL_PUSH_LIFTS.slice(), rx:pplRx(PPL_PUSH_LIFTS), defaultRx:Object.assign({}, PPL_RX), autoRest:true
   },
   {
-    id:'pull', dayLabel:'Day 2', title:'Pull', subtitle:'Back, Biceps', duration:'60 min', badge:null, category:'back',
-    warmup:{ duration:'5 min', description:'General warm-up' },
-    lifts:['latpull','seatedrow_speed','dbbentrow','facepull','curl','hammercurl'],
-    finisher:{ title:'Finisher', duration:'15 min', description:'Kettlebell/dumbbell swings, jump rope, or mountain climbers' }
+    id:'pull', dayLabel:'Day 2', title:'Pull', subtitle:'Back, Rear Delts, Biceps, Core', duration:'~75 min', badge:'6 × 10 · 2:00 rest', category:'back',
+    warmup:{ duration:'5 min', description:'Band pull-aparts, arm swings, light ramp-up sets' },
+    lifts:PPL_PULL_LIFTS.slice(), rx:pplRx(PPL_PULL_LIFTS), defaultRx:Object.assign({}, PPL_RX), autoRest:true
   },
   {
-    id:'legs', dayLabel:'Day 3', title:'Legs', subtitle:'Quads, Hamstrings, Glutes, Calves', duration:'60 min', badge:null, category:'legs-compound',
+    id:'legs', dayLabel:'Day 3', title:'Legs', subtitle:'Quads, Hamstrings, Glutes, Calves, Core', duration:'~90 min', badge:'6 × 10 · 2:00 rest', category:'legs-compound',
     warmup:{ duration:'5 min', description:'Bodyweight squats, leg swings' },
-    lifts:['gobletsquat','dbrdl','lunge','calfraise'],
-    finisher:{ title:'Finisher', duration:'15 min', description:'Incline walk, bike, or jump rope' }
+    lifts:PPL_LEGS_LIFTS.slice(), rx:pplRx(PPL_LEGS_LIFTS), defaultRx:Object.assign({}, PPL_RX), autoRest:true
   },
   {
     id:'fullbody', dayLabel:'Day 4', title:'Full Body', subtitle:'Full Body + Conditioning', duration:'60 min', badge:null, category:'fullbody',
