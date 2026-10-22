@@ -400,7 +400,18 @@ function renderPlanView(){
     const [repLo, repHi] = repRange(rx.reps);
     // Auto-set the rest timer to this exercise's prescribed rest (once per step, never mid-countdown).
     const timerKey = plan.date + '|' + day.id + '|' + idx;
-    if(lastTimerStepKey !== timerKey && !timerRunning){ timerTotal = rx.rest; timerRemaining = rx.rest; lastTimerStepKey = timerKey; }
+    if(lastTimerStepKey !== timerKey){
+      // autoRest days (Push / Pull / Legs): moving forward to the next exercise starts the
+      // between-exercise rest automatically. If the rest from your last ✓'d set is still
+      // counting down, it simply keeps going — that counts as the rest between exercises.
+      const firstExIdx = steps.findIndex(s=>s.type==='exercise');
+      const movedForward = lastTimerStepIdx != null && idx > lastTimerStepIdx && lastTimerStepKey && lastTimerStepKey.startsWith(plan.date + '|' + day.id + '|');
+      if(!timerRunning){
+        timerTotal = rx.rest; timerRemaining = rx.rest;
+        if(day.autoRest && movedForward && idx > firstExIdx) startTimer();
+      }
+      lastTimerStepKey = timerKey; lastTimerStepIdx = idx;
+    }
     const wwLabel = ex.unit==='lb' ? 'My working weight (lb)' : (ex.unit==='reps' ? 'My usual reps per set' : 'My usual hold (sec)');
     inner += `<div class="flex-between" style="gap:10px;flex-wrap:wrap;"><div style="display:flex;align-items:center;gap:12px;">${iconBadge(ex)}<div><h2 style="margin-bottom:2px;">${rx.emphasis?'<span style="color:var(--warn)">★</span> ':''}${ex.name}</h2><div class="hint" style="margin-bottom:0;">${categoryLabel(ex.category)}${rx.emphasis?' · priority muscle':''}</div></div></div>
       <button class="btn ghost" style="flex:0 0 auto;" onclick="swapCurrentExercise()" title="Machine taken or don't like it? Swap for a similar exercise.">⇄ Swap</button></div>

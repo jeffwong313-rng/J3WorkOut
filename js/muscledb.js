@@ -38,6 +38,13 @@ const ROLE_LOAD = { P:1, S:0.5, T:0.25 };
 const ROLE_LABEL = { P:'Primary', S:'Secondary', T:'Tertiary' };
 
 const MUSCLE_DB = {
+  // Added from the Push / Pull / Legs sheet
+  speediancedoublerow:'P:lats,upback|S:bi,rdelt|T:fore,lowback', speediancefacepull:'P:rdelt,upback|S:sdelt|T:bi',
+  fullextcurl:'P:bi|S:fore', weightedrussiantwist:'P:obl|S:abs|T:hipflex,fore',
+  speedianceclosegrip:'P:tri,chest|S:fdelt', speediancebench:'P:chest|S:tri,fdelt|T:upback',
+  speediancetricpulldown:'P:tri|T:fore', hammercurlpress:'P:fdelt,bi|S:sdelt,tri,fore|T:abs,upback',
+  speediancerdl:'P:hams,glutes|S:lowback|T:fore,upback', speediancecalfraise:'P:calves',
+  weightedlunge:'P:quads,glutes|S:hams,add|T:calves,abs,fore',
   // Legs — compound
   squat:'P:quads,glutes|S:add,lowback,hams|T:abs,calves',
   deadlift:'P:hams,glutes,lowback|S:quads,upback,fore,lats|T:abs,add',

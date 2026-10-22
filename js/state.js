@@ -48,6 +48,13 @@ if(!localStorage.getItem(LS_PREFIX+'exadds_coach')){
   localStorage.setItem(LS_PREFIX+'exadds_coach','1');
   save(LS_KEYS.exercises, exercises);
 }
+// Additive: exercises from the Push / Pull / Legs sheet are added once.
+const PPL_SHEET_EXERCISES = ['speediancedoublerow','speediancefacepull','fullextcurl','weightedrussiantwist','speedianceclosegrip','speediancebench','speediancetricpulldown','hammercurlpress','speediancerdl','speediancecalfraise','weightedlunge'];
+if(!localStorage.getItem(LS_PREFIX+'exadds_ppl1')){
+  [...new Set(PPL_SHEET_EXERCISES.concat(PPL_PUSH_LIFTS, PPL_PULL_LIFTS, PPL_LEGS_LIFTS))].forEach(id=>{ if(!exercises.some(e=>e.id===id)){ const d = DEFAULT_EXERCISES.find(x=>x.id===id); if(d) exercises.push(JSON.parse(JSON.stringify(d))); } });
+  localStorage.setItem(LS_PREFIX+'exadds_ppl1','1');
+  save(LS_KEYS.exercises, exercises);
+}
 let logs = loadJSON(LS_KEYS.logs, []);
 let activityLogs = loadJSON(LS_KEYS.activityLogs, []); // non-lifting "I was active" entries: {id,date,activityId,label,hours,notes}
 let WORKOUT_DAYS = loadJSON(LS_KEYS.workoutDays, DEFAULT_WORKOUT_DAYS); // fully editable in Settings → Workout Days
@@ -55,6 +62,22 @@ let WORKOUT_DAYS = loadJSON(LS_KEYS.workoutDays, DEFAULT_WORKOUT_DAYS); // fully
 // existed, so every day always has one to display and edit.
 WORKOUT_DAYS.forEach((d, i)=>{ if(d.dayLabel == null) d.dayLabel = 'Day ' + (i+1); });
 function saveWorkoutDays(){ save(LS_KEYS.workoutDays, WORKOUT_DAYS); }
+// One-time: Push / Pull / Legs days become the sheet plan (6 × 10, 2:00 rest). Existing days with
+// those ids are replaced (keeping their "Day N" label); if they're missing they're added up front.
+// Logged history is untouched. Other days (Full Body, coach days, your own) are left alone.
+if(!localStorage.getItem(LS_PREFIX+'days_ppl1')){
+  const pplDefaults = DEFAULT_WORKOUT_DAYS.filter(d=>['push','pull','legs'].includes(d.id));
+  const missing = [];
+  pplDefaults.forEach(def=>{
+    const fresh = JSON.parse(JSON.stringify(def));
+    const i = WORKOUT_DAYS.findIndex(d=>d.id===def.id);
+    if(i >= 0){ fresh.dayLabel = WORKOUT_DAYS[i].dayLabel || fresh.dayLabel; WORKOUT_DAYS[i] = fresh; }
+    else missing.push(fresh);
+  });
+  if(missing.length) WORKOUT_DAYS.unshift(...missing);
+  localStorage.setItem(LS_PREFIX+'days_ppl1','1');
+  saveWorkoutDays();
+}
 let selectedExerciseId = exercises.length ? exercises[0].id : null;
 let planPickerExpanded = true;       // Workout Plan: whether the day picker is expanded or collapsed to a strip
 let calendarViewDate = (()=>{ const p = pstParts(); return new Date(p.year, p.month-1, 1); })();

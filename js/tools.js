@@ -9,6 +9,7 @@ let timerRemaining = 60;
 let timerInterval = null;
 let timerRunning = false;
 let lastTimerStepKey = null; // which workout step last auto-set the rest timer
+let lastTimerStepIdx = null; // its step index (to tell moving forward from going back)
 const CIRC = 2 * Math.PI * 24; // matches the condensed 60px ring's radius
 
 // The timer's DOM only exists while an 'exercise' wizard step is on screen, so every
